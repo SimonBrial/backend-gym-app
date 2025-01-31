@@ -12,7 +12,7 @@ userRouter.put("/user/:id", user_controller_1.updateUsers);
 // Delete user by Id
 userRouter.delete("/user/:id", user_controller_1.deleteUsers);
 // Create user
-userRouter.post("/user", user_controller_1.createUsers);
+userRouter.post("/user", user_controller_1.createUser);
 // Get a quantity of users by a number (Pagination)
 userRouter.get("/users/:qty", user_controller_1.pagination);
 exports.default = userRouter;

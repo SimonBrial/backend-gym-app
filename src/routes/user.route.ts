@@ -1,9 +1,9 @@
 import { Router } from "express";
 import {
-  createUsers,
   deleteUsers,
   getUserById,
   updateUsers,
+  createUser,
   pagination,
   getUsers,
 } from "../controller/user.controller";
@@ -22,7 +22,7 @@ userRouter.put("/user/:id", updateUsers);
 userRouter.delete("/user/:id", deleteUsers);
 
 // Create user
-userRouter.post("/user", createUsers);
+userRouter.post("/user", createUser);
 
 // Get a quantity of users by a number (Pagination)
 userRouter.get("/users/:qty", pagination);

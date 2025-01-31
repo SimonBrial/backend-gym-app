@@ -14,14 +14,30 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.connection = void 0;
 const _1 = __importDefault(require("."));
-const connection = () => __awaiter(void 0, void 0, void 0, function* () {
+const dotenv_1 = __importDefault(require("dotenv"));
+dotenv_1.default.config();
+const connectToDatabase = () => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        yield _1.default.authenticate();
+        yield _1.default.sync({ force: true });
         console.log("Connection has been established successfully.");
     }
     catch (error) {
-        console.error("Unable to connect to the database:", error);
+        handleError(error);
     }
+});
+const handleError = (error) => {
+    // Aquí puedes agregar lógica para manejar diferentes tipos de errores
+    // Por ejemplo, errores de conexión, errores de autenticación, etc.
+    if (error) {
+        console.error("Specific error occurred:", error.message);
+    }
+    else {
+        console.error("An unexpected error occurred:", error);
+    }
+};
+const connection = () => __awaiter(void 0, void 0, void 0, function* () {
+    yield connectToDatabase();
+    // Aquí puedes agregar cualquier lógica adicional necesaria para la conexión
 });
 exports.connection = connection;
 //# sourceMappingURL=connection.js.map
