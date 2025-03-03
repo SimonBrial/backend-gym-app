@@ -6,23 +6,24 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.UserSchema = void 0;
 const sequelize_1 = require("sequelize");
 const db_1 = __importDefault(require("../db"));
+const dt = new Date();
 exports.UserSchema = db_1.default.define("user", {
-    id: {
+    _id: {
         type: sequelize_1.DataTypes.INTEGER,
         autoIncrement: true,
         primaryKey: true,
     },
-    dni: {
-        type: sequelize_1.DataTypes.INTEGER,
+    user_dni: {
+        type: sequelize_1.DataTypes.STRING(15),
         allowNull: false,
         unique: true,
     },
     name: {
-        type: sequelize_1.DataTypes.STRING,
+        type: sequelize_1.DataTypes.STRING(30),
         allowNull: false,
     },
     last_name: {
-        type: sequelize_1.DataTypes.STRING,
+        type: sequelize_1.DataTypes.STRING(30),
         allowNull: false,
     },
     weight: {
@@ -33,10 +34,14 @@ exports.UserSchema = db_1.default.define("user", {
         type: sequelize_1.DataTypes.INTEGER,
         allowNull: false,
     },
+    plan: {
+        type: sequelize_1.DataTypes.ENUM("monthly", "weekly", "daily"),
+        allowNull: false,
+    },
     registration_date: {
         type: sequelize_1.DataTypes.DATE,
         allowNull: false,
-        defaultValue: sequelize_1.DataTypes.NOW,
+        defaultValue: dt.toISOString(),
     },
     last_payment: {
         type: sequelize_1.DataTypes.DATE,
@@ -48,22 +53,32 @@ exports.UserSchema = db_1.default.define("user", {
         defaultValue: 0,
     },
     trainer_id: {
-        type: sequelize_1.DataTypes.UUID,
+        // Id  from the DDBB
+        type: sequelize_1.DataTypes.STRING(6),
         allowNull: true,
+        // unique: true,
+        defaultValue: "000000",
+    },
+    trainer_dni: {
+        type: sequelize_1.DataTypes.STRING(10), // The length of the DNI should be define
+        allowNull: true,
+        // unique: true,
+        defaultValue: "No asignado",
     },
     trainer_name: {
-        type: sequelize_1.DataTypes.STRING,
+        type: sequelize_1.DataTypes.STRING(50),
         allowNull: true,
-        defaultValue: "No asignado"
+        defaultValue: "No asignado",
     },
     last_update: {
         type: sequelize_1.DataTypes.DATE,
         allowNull: false,
-        defaultValue: sequelize_1.DataTypes.NOW,
+        defaultValue: dt.toISOString(),
     },
     invoices_id: {
-        type: sequelize_1.DataTypes.ARRAY(sequelize_1.DataTypes.STRING),
+        type: sequelize_1.DataTypes.ARRAY(sequelize_1.DataTypes.STRING()),
         allowNull: true,
+        defaultValue: [],
     },
 }, { timestamps: true });
 // UserSchema.belongsTo(TrainerSchema, { foreignKey: "trainer_id" });

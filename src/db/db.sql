@@ -1,41 +1,43 @@
-CREATE TABLE trainer (
-  trainer_id SERIAL PRIMARY KEY,
-  dni INTEGER NOT NULL,
-  name VARCHAR(100) NOT NULL,
-  last_name VARCHAR(100) NOT NULL,
-  age INTEGER NOT NULL,
-  area VARCHAR(100) NOT NULL,
-  clients_dni INTEGER
-);
-
-CREATE TABLE client (
-  client_id SERIAL PRIMARY KEY,
-  dni INTEGER NOT NULL,
-  name VARCHAR(100) NOT NULL,
-  last_name VARCHAR(100) NOT NULL,
-  age INTEGER NOT NULL,
-  weight DECIMAL NOT NULL,
-  registration_date DATE NOT NULL,
-  last_pay_date DATE NOT NULL,
-  days_of_debt INTEGER NOT NULL,
-  trainer_id INTEGER,
-  trainer_name VARCHAR(100),
-  last_update DATE NOT NULL,
-  invoices_id INTEGER
-);
-
 CREATE TABLE invoice (
-  invoice_id SERIAL PRIMARY KEY,
-  dni BIGINT NOT NULL,
-  client_name VARCHAR(100) NOT NULL,
-  client_last_name VARCHAR(100) NOT NULL,
+  _id SERIAL PRIMARY KEY,
+  invoice_id VARCHAR NOT NULL,
+  client_dni VARCHAR,
+  client_name VARCHAR NOT NULL,
+  client_last_name VARCHAR NOT NULL,
   trainer_id INTEGER,
-  trainer_name VARCHAR(100),
+  trainer_name VARCHAR DEFAULT 'No asignado',
   first_date DATE NOT NULL,
   last_date DATE NOT NULL,
-  amount BIGINT NOT NULL,
-  client_dni INTEGER NOT NULL
+  amount INTEGER NOT NULL DEFAULT 0
 );
+
+CREATE TABLE trainer (
+  _id SERIAL PRIMARY KEY,
+  trainer_dni INTEGER NOT NULL,
+  name VARCHAR NOT NULL,
+  last_name VARCHAR NOT NULL,
+  age INTEGER NOT NULL,
+  area VARCHAR DEFAULT 'No indicado',
+  clients_dni INTEGER NOT NULL
+);
+
+CREATE TABLE users (
+  _id SERIAL PRIMARY KEY,
+  user_dni VARCHAR NOT NULL UNIQUE,
+  name VARCHAR NOT NULL,
+  last_name VARCHAR NOT NULL,
+  weight INTEGER NOT NULL,
+  age INTEGER NOT NULL,
+  registration_date DATE NOT NULL DEFAULT CURRENT_DATE,
+  last_payment DATE NOT NULL,
+  days_of_debt INTEGER NOT NULL DEFAULT 0,
+  trainer_id INTEGER,
+  trainer_dni VARCHAR UNIQUE,
+  trainer_name VARCHAR DEFAULT 'No asignado',
+  last_update DATE NOT NULL DEFAULT CURRENT_DATE,
+  invoices_id TEXT[]  -- Usando un array de texto para almacenar los IDs de las facturas
+);
+
 
 ALTER TABLE trainer 
 ADD CONSTRAINT trainer_clients_dni_fk FOREIGN KEY (clients_dni) REFERENCES client (client_id);

@@ -7,22 +7,21 @@ exports.TrainerSchema = void 0;
 const sequelize_1 = require("sequelize");
 const db_1 = __importDefault(require("../db"));
 exports.TrainerSchema = db_1.default.define("trainer", {
-    trainer_id: {
-        type: sequelize_1.DataTypes.UUIDV4,
-        defaultValue: sequelize_1.DataTypes.UUIDV4,
+    _id: {
+        type: sequelize_1.DataTypes.INTEGER,
         allowNull: false,
         primaryKey: true,
     },
-    dni: {
-        type: sequelize_1.DataTypes.INTEGER,
+    trainer_dni: {
+        type: sequelize_1.DataTypes.STRING(15),
         allowNull: false,
     },
     name: {
-        type: sequelize_1.DataTypes.STRING,
+        type: sequelize_1.DataTypes.STRING(30),
         allowNull: false,
     },
     last_name: {
-        type: sequelize_1.DataTypes.STRING,
+        type: sequelize_1.DataTypes.STRING(30),
         allowNull: false,
     },
     age: {
@@ -30,7 +29,7 @@ exports.TrainerSchema = db_1.default.define("trainer", {
         allowNull: false,
     },
     area: {
-        type: sequelize_1.DataTypes.STRING,
+        type: sequelize_1.DataTypes.STRING(20),
         allowNull: true,
         defaultValue: "No indicado",
     },
@@ -38,5 +37,5 @@ exports.TrainerSchema = db_1.default.define("trainer", {
         type: sequelize_1.DataTypes.INTEGER,
         allowNull: false,
     },
-});
+}, { timestamps: true });
 //# sourceMappingURL=trainer.schema.js.map

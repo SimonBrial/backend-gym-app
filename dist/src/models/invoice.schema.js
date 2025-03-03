@@ -7,30 +7,39 @@ exports.InvoiceSchema = void 0;
 const sequelize_1 = require("sequelize");
 const db_1 = __importDefault(require("../db"));
 exports.InvoiceSchema = db_1.default.define("invoice", {
-    invoice_id: {
-        type: sequelize_1.DataTypes.UUID,
-        defaultValue: sequelize_1.DataTypes.UUIDV4,
+    _id: {
+        type: sequelize_1.DataTypes.INTEGER,
         allowNull: false,
         primaryKey: true,
     },
-    dni: {
-        type: sequelize_1.DataTypes.INTEGER,
+    invoice_id: {
+        type: sequelize_1.DataTypes.STRING(20),
         allowNull: false,
     },
+    client_dni: {
+        type: sequelize_1.DataTypes.STRING(15),
+        allowNull: true,
+    },
     client_name: {
-        type: sequelize_1.DataTypes.STRING,
+        type: sequelize_1.DataTypes.STRING(30),
         allowNull: false,
     },
     client_last_name: {
-        type: sequelize_1.DataTypes.STRING,
+        type: sequelize_1.DataTypes.STRING(30),
         allowNull: false,
     },
     trainer_id: {
         type: sequelize_1.DataTypes.INTEGER,
         allowNull: true,
     },
+    trainer_dni: {
+        type: sequelize_1.DataTypes.STRING, // The length of the DNI should be define
+        allowNull: true,
+        unique: true,
+        defaultValue: "No asignado",
+    },
     trainer_name: {
-        type: sequelize_1.DataTypes.INTEGER,
+        type: sequelize_1.DataTypes.STRING(50),
         allowNull: true,
         defaultValue: "No asignado",
     },
@@ -47,9 +56,5 @@ exports.InvoiceSchema = db_1.default.define("invoice", {
         allowNull: false,
         defaultValue: 0,
     },
-    client_dni: {
-        type: sequelize_1.DataTypes.UUIDV4,
-        allowNull: true,
-    },
-});
+}, { timestamps: true });
 //# sourceMappingURL=invoice.schema.js.map

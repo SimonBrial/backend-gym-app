@@ -1,25 +1,27 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../db";
 
+const dt = new Date();
+
 export const UserSchema = sequelize.define(
   "user",
   {
-    id: {
+    _id: {
       type: DataTypes.INTEGER,
       autoIncrement: true,
       primaryKey: true,
     },
-    dni: {
-      type: DataTypes.INTEGER,
+    user_dni: {
+      type: DataTypes.STRING(15),
       allowNull: false,
       unique: true,
     },
     name: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(30),
       allowNull: false,
     },
     last_name: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(30),
       allowNull: false,
     },
     weight: {
@@ -30,10 +32,14 @@ export const UserSchema = sequelize.define(
       type: DataTypes.INTEGER,
       allowNull: false,
     },
+    plan: {
+      type: DataTypes.ENUM("monthly", "weekly", "daily"),
+      allowNull: false,
+    },
     registration_date: {
       type: DataTypes.DATE,
       allowNull: false,
-      defaultValue: DataTypes.NOW,
+      defaultValue: dt.toISOString(),
     },
     last_payment: {
       type: DataTypes.DATE,
@@ -45,22 +51,32 @@ export const UserSchema = sequelize.define(
       defaultValue: 0,
     },
     trainer_id: {
-      type: DataTypes.UUID,
+      // Id  from the DDBB
+      type: DataTypes.STRING(6),
       allowNull: true,
+      // unique: true,
+      defaultValue: "000000",
+    },
+    trainer_dni: {
+      type: DataTypes.STRING(10), // The length of the DNI should be define
+      allowNull: true,
+      // unique: true,
+      defaultValue: "No asignado",
     },
     trainer_name: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(50),
       allowNull: true,
-      defaultValue: "No asignado"
+      defaultValue: "No asignado",
     },
     last_update: {
       type: DataTypes.DATE,
       allowNull: false,
-      defaultValue: DataTypes.NOW,
+      defaultValue: dt.toISOString(),
     },
     invoices_id: {
-      type: DataTypes.ARRAY(DataTypes.STRING),
+      type: DataTypes.ARRAY(DataTypes.STRING()),
       allowNull: true,
+      defaultValue: [],
     },
   },
   { timestamps: true },

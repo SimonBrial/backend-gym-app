@@ -1,8 +1,8 @@
 import { Router } from "express";
 import {
-  deleteUsers,
+  deleteUser,
   getUserById,
-  updateUsers,
+  updateUser,
   createUser,
   pagination,
   getUsers,
@@ -13,16 +13,16 @@ const userRouter = Router();
 // Get all users
 userRouter.get("/users", getUsers);
 // Get user by ID
-userRouter.get("/user/:id", getUserById);
+userRouter.get("/user/:_id", getUserById);
 
 // Update user by Id
-userRouter.put("/user/:id", updateUsers);
+userRouter.put("/user/:_id", updateUser);
 
 // Delete user by Id
-userRouter.delete("/user/:id", deleteUsers);
+userRouter.delete("/user/:_id", deleteUser);
 
 // Create user
-userRouter.post("/user", createUser);
+userRouter.post("/user/create", createUser);
 
 // Get a quantity of users by a number (Pagination)
 userRouter.get("/users/:qty", pagination);

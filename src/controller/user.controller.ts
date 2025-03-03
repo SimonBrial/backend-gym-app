@@ -8,10 +8,11 @@ const getUsers = async (req: Request, res: Response): Promise<void> => {
   try {
     // const user = req.body.name;
     const users = await UserSchema.findAll();
+    console.log("users: ", users);
 
     // No users found
     if (!users || users.length === 0) {
-      console.log("Something went wrong");
+      console.log("DB empty!");
       return ErrorHandler(
         {
           statusCode: 404,
@@ -22,7 +23,7 @@ const getUsers = async (req: Request, res: Response): Promise<void> => {
     }
 
     // Users found
-    res.status(200).json({ message: "Usuarios encontrados", users });
+    res.status(200).json({ message: "Usuarios encontrados", data: users });
   } catch (err) {
     ErrorHandler(
       {
@@ -38,28 +39,35 @@ const getUsers = async (req: Request, res: Response): Promise<void> => {
 const getUserById = async (req: UserRequest, res: Response): Promise<void> => {
   try {
     const { _id } = req.params;
+    console.log("Received ID:", _id);
+    const userId = parseInt(_id);
     // If there is problem with the request
-    if (!_id) {
+    if (!userId || isNaN(userId)) {
       return ErrorHandler(
         { statusCode: 400, message: "Problema con la solicitud" },
         res,
       );
     }
-    // If there ins't any problem with the request
+    // If there isn't any problem with the request
     const userFound = await UserSchema.findOne({
-      where: { clientid: _id },
+      where: { _id: userId },
     });
 
-    // No User found
+    // User not found
     if (!userFound) {
       return ErrorHandler(
         { statusCode: 404, message: "Usuario no encontrado" },
         res,
       );
     }
+    const dataResponse = {
+      status: "success",
+      message: "Usuario encontrado",
+      data: userFound,
+    };
 
     // User found
-    res.status(200).json({ user: userFound });
+    res.status(200).json(dataResponse);
   } catch (err) {
     ErrorHandler(
       { statusCode: 500, message: "Ha ocurrido un error en el servidor" },
@@ -71,47 +79,78 @@ const getUserById = async (req: UserRequest, res: Response): Promise<void> => {
 // Create user
 const createUser = async (req: UserRequest, res: Response): Promise<void> => {
   try {
-    const users = await UserSchema.findAll();
-    if (!users || users.length === 0) {
+    // TODO: Verify if the req.body doesn't empty.
+    // TODO: Verify if the user hasn't already been created. The DNI should be used for that validation.
+
+    const userToCreate = req.body;
+
+    if (!userToCreate) {
       return ErrorHandler(
-        { statusCode: 404, message: "Algo ha pasado con la solicitud" },
+        { statusCode: 400, message: "El cuerpo de la solicitud está vacío" },
         res,
       );
     }
+
     const {
-      registration_date,
-      days_of_debt,
-      trainer_name,
-      last_payment,
-      last_updated,
-      invoices_id,
+      trainer_dni,
       trainer_id,
+      last_name,
+      user_dni,
       weight,
+      plan,
       name,
-      dni,
       age,
     } = req.body;
 
-    const user: UserBody = {
-      client_id: users.length + 1,
-      registration_date,
-      days_of_debt,
-      trainer_name,
-      last_payment,
-      last_updated,
-      invoices_id,
-      trainer_id,
-      weight,
+    const sameUsers = await UserSchema.findAll({ where: { user_dni } });
+
+    if (sameUsers && sameUsers.length > 0) {
+      return ErrorHandler(
+        { statusCode: 409, message: "Ya existe un usuario con ese DNI" },
+        res,
+      );
+    }
+
+    const totalUsers = await UserSchema.findAll();
+
+    const user /* : UserBody */ = {
+      _id: totalUsers.length + 1,
+      user_dni,
       name,
-      dni,
+      last_name,
       age,
+      weight,
+      trainer_id,
+      trainer_dni,
+      plan,
+      registration_date: new Date(),
+      last_payment: new Date(),
+      last_update: new Date(),
+      days_of_debt: 0,
+      trainer_name: "",
+      invoices_id: [""],
+      // createdAt: new Date(),
+      // updatedAt: new Date(),
     };
 
-    const data = await UserSchema.create({ user });
+    const data = await UserSchema.create(user);
+    console.log("---> data:", data);
 
-    res
-      .sendStatus(201)
-      .json({ message: "El usuario ha sido creado", user: data });
+    if (!data) {
+      return ErrorHandler(
+        {
+          statusCode: 400,
+          message: "Hubo un problema para crear el registro.",
+        },
+        res,
+      );
+    }
+    // Process Complete to create a new user.
+    res.status(201).json({
+      status: "success",
+      message: "El usuario ha sido creado satisfactoriamente!",
+      user: data,
+    });
 
     // const user = res.json({ res: "Creating user" });
   } catch (err) {
@@ -119,11 +158,12 @@ const createUser = async (req: UserRequest, res: Response): Promise<void> => {
       { statusCode: 500, message: "Ha ocurrido un error en el servidor" },
       res,
     );
+    console.log("Error:", err);
   }
 };
 
-// Update user by Id
-const deleteUsers = async (req: UserRequest, res: Response): Promise<void> => {
+// DELETE user by Id
+const deleteUser = async (req: UserRequest, res: Response): Promise<void> => {
   try {
     // Find user to delete
     const { _id } = req.params; // ID of user
@@ -136,9 +176,9 @@ const deleteUsers = async (req: UserRequest, res: Response): Promise<void> => {
       );
     }
 
-    // Id id exists
+    // If id exists
     const userToDelete = await UserSchema.findOne({
-      where: { clientid: _id },
+      where: { _id: _id },
     });
 
     if (!userToDelete) {
@@ -150,15 +190,23 @@ const deleteUsers = async (req: UserRequest, res: Response): Promise<void> => {
 
     await userToDelete.destroy();
 
-    res.json({ res: "Updating user" });
+    res.status(200).json({
+      status: "sucess",
+      message: "El usuario ha sido eliminado satisfactoriamente",
+      data: null,
+    });
   } catch (err) {
     console.log(err);
   }
 };
-// Delete user by Id
-const updateUsers = async (req: UserRequest, res: Response): Promise<void> => {
+// UPDATE user by Id
+const updateUser = async (req: UserRequest, res: Response): Promise<void> => {
   try {
-    res.json({ res: "Deleting user" });
+    // TODO: Read ID from request
+    // TODO: Search user by ID
+    // TODO: Confirm that the user exist, if do not exist, then send message.
+    // TODO: If user existing then update the user data.
+    // TODO: if data has been updated, then the API will send a success message.
   } catch (err) {
     console.log(err);
   }
@@ -176,8 +224,8 @@ const pagination = async (req: Request, res: Response): Promise<void> => {
 
 export {
   getUserById,
-  updateUsers,
-  deleteUsers,
+  updateUser,
+  deleteUser,
   createUser,
   pagination,
   getUsers,
