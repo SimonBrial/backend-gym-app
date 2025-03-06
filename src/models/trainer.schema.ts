@@ -30,9 +30,10 @@ export const TrainerSchema = sequelize.define(
       allowNull: true,
       defaultValue: "No indicado",
     },
-    clients_dni: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
+    assigned_clients: {
+      type: DataTypes.ARRAY(DataTypes.STRING()),
+      allowNull: true,
+      defaultValue: [],
     },
   },
   { timestamps: true },

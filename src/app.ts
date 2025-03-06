@@ -4,6 +4,7 @@ import { connection } from "./db/connection";
 import express, { Response, Request } from "express";
 import cors from "cors";
 import userRouter from "./routes/user.route";
+import trainerRouter from "./routes/trainer.route";
 
 const app = express();
 
@@ -25,6 +26,8 @@ app.get("/v1", (req: Request, res: Response) => {
 
 // User Route
 app.use("/v1", userRouter);
+// invoice Route
+app.use("/v1", trainerRouter);
 
 // Server Connection
 app.listen(config.PORT, () =>

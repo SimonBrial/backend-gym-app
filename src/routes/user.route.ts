@@ -25,6 +25,6 @@ userRouter.delete("/user/:_id", deleteUser);
 userRouter.post("/user/create", createUser);
 
 // Get a quantity of users by a number (Pagination)
-userRouter.get("/users/:qty", pagination);
+// userRouter.get("/users/:qty", pagination);
 
 export default userRouter;

@@ -25,6 +25,36 @@ interface UserBody {
   /*  createdAt: Date;
   updatedAt: Date; */
 }
+
+interface UserBodyCreating {
+  user_dni: string;
+  name: string;
+  last_name: string;
+  weight: number;
+  plan: trainerPlan;
+  age: number;
+  trainer_dni?: string;
+  trainer_id?: string;
+}
+
+interface TrainerBody {
+  _id: number; // This is not the client Id, it's just for the DB requeriments.
+  trainer_dni: string;
+  name: string;
+  last_name: string;
+  age: number;
+  area: string;
+  assigned_clients: string[];
+}
+interface TrainerBodyCreating {
+  _id: number; // This is not the client Id, it's just for the DB requeriments.
+  trainer_dni: string;
+  name: string;
+  last_name: string;
+  age: number;
+  area: string;
+}
+
 interface UserCreateBody {
   _id: number; // This is not the client Id, it's just for the DB requeriments.
   user_dni: string;
@@ -41,22 +71,26 @@ interface UserCreateBody {
 
 interface RequestQuery {
   limit?: number;
+  p;
 }
 
 interface RequestParams {
   _id: string;
 }
 
-interface UserRequest extends Request {
+interface CustomRequest<T> extends Request {
   params: RequestParams;
   query?: RequestQuery;
-  body: UserBody;
+  body: T;
 }
 
 export type {
-  UserBody,
+  TrainerBodyCreating,
+  UserBodyCreating,
   IErrorHandler,
   RequestParams,
+  CustomRequest,
   RequestQuery,
-  UserRequest,
+  TrainerBody,
+  UserBody,
 };
