@@ -1,19 +1,26 @@
 import { Router } from "express";
+import {
+  getTrainers,
+  createTrainer,
+  deleteTrainer,
+  getTrainerById,
+  updateTrainer,
+} from "../controller/trainer.controller";
 
 const trainerRouter = Router();
 
-// Get all invoice
-trainerRouter.get("/invoices", () => {});
-// Get invoice by ID
-trainerRouter.get("/invoice/:_id", () => {});
+// Get all trainers
+trainerRouter.get("/trainers", getTrainers);
+// Get trainer by ID
+trainerRouter.get("/trainer/:_id", getTrainerById);
 
-// Update invoice by Id
-trainerRouter.put("/invoice/:_id", () => {});
+// UPDATE trainer by Id
+trainerRouter.put("/trainer/u/:_id", updateTrainer);
 
-// Delete invoice by Id
-trainerRouter.delete("/invoice/:_id", () => {});
+// DELETE trainer by Id
+trainerRouter.delete("/trainer/d/:_id", deleteTrainer);
 
-// Create invoice
-trainerRouter.post("/invoice/create", () => {});
+// CREATE trainer
+trainerRouter.post("/trainer/create", createTrainer);
 
 export default trainerRouter;

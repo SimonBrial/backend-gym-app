@@ -2,9 +2,9 @@ import { Request, Response } from "express";
 import { ErrorHandler } from "../helpers/ErrorHandler";
 import { TrainerSchema } from "../models/trainer.schema";
 import {
+  CustomResponse,
   CustomRequest,
   TrainerBody,
-  TrainerBodyCreating,
 } from "../interface/interface";
 
 // READ all trainers
@@ -14,25 +14,27 @@ const getTrainers = async (req: Request, res: Response): Promise<void> => {
     const trainers = await TrainerSchema.findAll();
 
     // if not found trainers in the DDBB.
-    if (!trainers) {
-      ErrorHandler(
+    if (!trainers || trainers.length === 0) {
+      return ErrorHandler(
         {
           statusCode: 404,
-          message: "No se encontraron facturas en la base de datos",
+          message: "No se encontraron entrenadores en la base de datos",
         },
         res,
       );
     }
 
-    // Trainer found
-    res.status(200).json({
+    const dataResponse: CustomResponse = {
       status: "success",
-      message: "Usuarios encontrados",
+      message: "Entrenadores encontrados",
       data: trainers,
-    });
+    };
+
+    // Trainer found
+    res.status(200).json(dataResponse);
   } catch (err) {
     console.log(err);
-    ErrorHandler(
+    return ErrorHandler(
       {
         statusCode: 400,
         message: "la solicitud no ha podido ser gestionada adecuadamente.",
@@ -52,11 +54,11 @@ const getTrainerById = async (
     const { _id } = req.params;
 
     console.log("Received ID:", _id);
-    const userId = parseInt(_id);
+    const trainerId = parseInt(_id);
 
     // if _id in not found
-    if (!_id || parseInt(_id)) {
-      ErrorHandler(
+    if (!_id || isNaN(trainerId)) {
+      return ErrorHandler(
         {
           statusCode: 400,
           message: "Problemas con la solicitud, no ha podido ser procesada.",
@@ -67,11 +69,11 @@ const getTrainerById = async (
 
     // if there isn't problem with the params of the request.
     const trainerFound = await TrainerSchema.findOne({
-      where: { _id: userId },
+      where: { _id: trainerId },
     });
 
     // if trainer not found
-    if (trainerFound) {
+    if (!trainerFound) {
       return ErrorHandler(
         { statusCode: 404, message: "Entrenador no encontrado" },
         res,
@@ -79,7 +81,7 @@ const getTrainerById = async (
     }
 
     // Trainer found
-    const dataResponse = {
+    const dataResponse: CustomResponse = {
       status: "success",
       message: "Entrenador encontrado",
       data: trainerFound,
@@ -89,7 +91,7 @@ const getTrainerById = async (
     res.status(200).json(dataResponse);
   } catch (err) {
     console.log(err);
-    ErrorHandler(
+    return ErrorHandler(
       {
         statusCode: 400,
         message: "la solicitud no ha podido ser gestionada adecuadamente.",
@@ -104,6 +106,53 @@ const updateTrainer = async (
   res: Response,
 ): Promise<void> => {
   try {
+    // TODO: Read ID from request and body.
+    const { _id } = req.params;
+
+    if (!_id || !req.body) {
+      return ErrorHandler(
+        { statusCode: 404, message: "Problemas con la solicitud." },
+        res,
+      );
+    }
+
+    const trainerId = parseInt(_id);
+    // TODO: Search trainer by ID
+    const trainerFound = await TrainerSchema.findOne({ where: { _id: _id } });
+
+    // TODO: Confirm that the trainer exist, if do not exist, then send message.
+    if (!trainerFound) {
+      return ErrorHandler(
+        { statusCode: 404, message: "Trainer no encontrado" },
+        res,
+      );
+    }
+
+    // TODO: If trainer existing then, update the trainer data.
+    const { age, area, assigned_clients, last_name, name, trainer_dni } =
+      req.body;
+    const userUpdated /* : TrainerBody */ = {
+      _id: _id,
+      assigned_clients,
+      trainer_dni,
+      last_name,
+      area,
+      name,
+      age,
+    };
+    // TODO: if data has been updated, then the API will send a success message.
+
+    trainerFound.set(userUpdated);
+
+    await trainerFound.save();
+
+    const dataResponse: CustomResponse = {
+      status: "success",
+      message: "El entrenador ha sido actualizado satisfactoriamente!",
+      data: null,
+    };
+
+    res.status(200).json(dataResponse);
   } catch (err) {
     console.log(err);
     ErrorHandler(
@@ -156,7 +205,7 @@ const deleteTrainer = async (
     // Trainer found
     await trainerToDelete.destroy();
 
-    const dataResponse = {
+    const dataResponse: CustomResponse = {
       status: "success",
       message: "El entrenador ha sido eliminado satisfactoriamente",
       data: null,
@@ -194,7 +243,7 @@ const createTrainer = async (
       );
     }
 
-    const { _id, age, area, last_name, name, trainer_dni, assigned_clients } =
+    const { age, area, last_name, name, trainer_dni, assigned_clients } =
       req.body;
 
     const sameTrainer = await TrainerSchema.findAll({ where: { trainer_dni } });
@@ -231,12 +280,15 @@ const createTrainer = async (
         res,
       );
     }
-    // Process Complete to create a new trainer.
-    res.status(201).json({
+
+    const dataResponse: CustomResponse = {
       status: "success",
       message: "El entrenador ha sido creado satisfactoriamente!",
-      user: data,
-    });
+      data: data,
+    };
+
+    // Process Complete to create a new trainer.
+    res.status(201).json(dataResponse);
   } catch (err) {
     console.log(err);
     ErrorHandler(

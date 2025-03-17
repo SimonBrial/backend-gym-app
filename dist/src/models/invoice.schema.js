@@ -18,7 +18,7 @@ exports.InvoiceSchema = db_1.default.define("invoice", {
     },
     client_dni: {
         type: sequelize_1.DataTypes.STRING(15),
-        allowNull: true,
+        allowNull: false,
     },
     client_name: {
         type: sequelize_1.DataTypes.STRING(30),
@@ -28,10 +28,10 @@ exports.InvoiceSchema = db_1.default.define("invoice", {
         type: sequelize_1.DataTypes.STRING(30),
         allowNull: false,
     },
-    trainer_id: {
-        type: sequelize_1.DataTypes.INTEGER,
-        allowNull: true,
-    },
+    /* trainer_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    }, */
     trainer_dni: {
         type: sequelize_1.DataTypes.STRING, // The length of the DNI should be define
         allowNull: true,
@@ -39,7 +39,12 @@ exports.InvoiceSchema = db_1.default.define("invoice", {
         defaultValue: "No asignado",
     },
     trainer_name: {
-        type: sequelize_1.DataTypes.STRING(50),
+        type: sequelize_1.DataTypes.STRING(20),
+        allowNull: true,
+        defaultValue: "No asignado",
+    },
+    trainer_last_name: {
+        type: sequelize_1.DataTypes.STRING(20),
         allowNull: true,
         defaultValue: "No asignado",
     },
@@ -55,6 +60,10 @@ exports.InvoiceSchema = db_1.default.define("invoice", {
         type: sequelize_1.DataTypes.INTEGER,
         allowNull: false,
         defaultValue: 0,
+    },
+    plan: {
+        type: sequelize_1.DataTypes.ENUM("monthly", "weekly", "daily"),
+        allowNull: false,
     },
 }, { timestamps: true });
 //# sourceMappingURL=invoice.schema.js.map

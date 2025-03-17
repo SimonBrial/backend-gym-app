@@ -15,7 +15,7 @@ export const InvoiceSchema = sequelize.define(
     },
     client_dni: {
       type: DataTypes.STRING(15),
-      allowNull: true,
+      allowNull: false,
     },
     client_name: {
       type: DataTypes.STRING(30),
@@ -25,10 +25,10 @@ export const InvoiceSchema = sequelize.define(
       type: DataTypes.STRING(30),
       allowNull: false,
     },
-    trainer_id: {
+    /* trainer_id: {
       type: DataTypes.INTEGER,
       allowNull: true,
-    },
+    }, */
     trainer_dni: {
       type: DataTypes.STRING, // The length of the DNI should be define
       allowNull: true,
@@ -36,7 +36,12 @@ export const InvoiceSchema = sequelize.define(
       defaultValue: "No asignado",
     },
     trainer_name: {
-      type: DataTypes.STRING(50),
+      type: DataTypes.STRING(20),
+      allowNull: true,
+      defaultValue: "No asignado",
+    },
+    trainer_last_name: {
+      type: DataTypes.STRING(20),
       allowNull: true,
       defaultValue: "No asignado",
     },
@@ -52,6 +57,10 @@ export const InvoiceSchema = sequelize.define(
       type: DataTypes.INTEGER,
       allowNull: false,
       defaultValue: 0,
+    },
+    plan: {
+      type: DataTypes.ENUM("monthly", "weekly", "daily"),
+      allowNull: false,
     },
   },
   { timestamps: true },

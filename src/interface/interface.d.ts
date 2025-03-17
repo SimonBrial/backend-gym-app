@@ -1,5 +1,5 @@
 import { Request } from "express";
-import { trainerPlan } from "../types/types";
+import { trainerPlan, statusStr } from "../types/types";
 
 interface IErrorHandler {
   statusCode: number;
@@ -25,6 +25,23 @@ interface UserBody {
   /*  createdAt: Date;
   updatedAt: Date; */
 }
+
+interface InvoiceBody {
+  _id: number;
+  invoice_id: string;
+  client_dni: string;
+  client_name: string;
+  client_last_name: string;
+  // trainer_id?: number;
+  trainer_dni?: string;
+  trainer_name?: string;
+  trainer_last_name?: string;
+  first_date: Date;
+  last_date: Date;
+  amount: number;
+  plan: trainerPlan;
+}
+
 
 interface UserBodyCreating {
   user_dni: string;
@@ -84,13 +101,21 @@ interface CustomRequest<T> extends Request {
   body: T;
 }
 
+interface CustomResponse {
+  status: statusStr;
+  message: string;
+  data: any;
+}
+
 export type {
   TrainerBodyCreating,
   UserBodyCreating,
+  CustomResponse,
   IErrorHandler,
   RequestParams,
   CustomRequest,
   RequestQuery,
+  InvoiceBody,
   TrainerBody,
   UserBody,
 };

@@ -33,9 +33,10 @@ exports.TrainerSchema = db_1.default.define("trainer", {
         allowNull: true,
         defaultValue: "No indicado",
     },
-    clients_dni: {
-        type: sequelize_1.DataTypes.INTEGER,
-        allowNull: false,
+    assigned_clients: {
+        type: sequelize_1.DataTypes.ARRAY(sequelize_1.DataTypes.STRING()),
+        allowNull: true,
+        defaultValue: [],
     },
 }, { timestamps: true });
 //# sourceMappingURL=trainer.schema.js.map

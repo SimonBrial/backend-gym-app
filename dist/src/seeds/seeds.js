@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.usersSeeds = void 0;
+exports.trainersSeeds = exports.usersSeeds = void 0;
 exports.usersSeeds = [
     {
         _id: 1,
@@ -57,4 +57,39 @@ exports.usersSeeds = [
         updatedAt: new Date('2023-01-15') */
     },
 ];
-//# sourceMappingURL=users.js.map
+exports.trainersSeeds = [
+    {
+        _id: 1,
+        trainer_dni: "123456789",
+        name: "Trainer Juan",
+        last_name: "Perez",
+        age: 30,
+        area: "trainer-001",
+        assigned_clients: ["123456789"],
+        /* createdAt: new Date('2023-01-15'),
+        updatedAt: new Date('2023-01-15') */
+    },
+    {
+        _id: 2,
+        trainer_dni: "456789123",
+        name: "Ana",
+        last_name: "Hernandez",
+        age: 30,
+        assigned_clients: [""],
+        area: "",
+        /* createdAt: new Date('2023-01-15'),
+        updatedAt: new Date('2023-01-15') */
+    },
+    {
+        _id: 3,
+        trainer_dni: "159487263",
+        name: "Carlos",
+        last_name: "Suarez",
+        age: 30,
+        assigned_clients: ["invoice-001"],
+        area: "",
+        /* createdAt: new Date('2023-01-15'),
+        updatedAt: new Date('2023-01-15') */
+    },
+];
+//# sourceMappingURL=seeds.js.map

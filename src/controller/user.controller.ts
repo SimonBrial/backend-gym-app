@@ -1,7 +1,11 @@
 import { Request, Response } from "express";
 import { UserSchema } from "../models/user.schema";
 import { ErrorHandler } from "../helpers/ErrorHandler";
-import { CustomRequest, UserBody } from "../interface/interface";
+import {
+  CustomRequest,
+  CustomResponse,
+  UserBody,
+} from "../interface/interface";
 
 // READ all users
 const getUsers = async (req: Request, res: Response): Promise<void> => {
@@ -22,12 +26,14 @@ const getUsers = async (req: Request, res: Response): Promise<void> => {
       );
     }
 
-    // Users found
-    res.status(200).json({
+    const dataResponse: CustomResponse = {
       status: "success",
       message: "Usuarios encontrados",
       data: users,
-    });
+    };
+
+    // Users found
+    res.status(200).json(dataResponse);
   } catch (err) {
     ErrorHandler(
       {
@@ -69,12 +75,12 @@ const getUserById = async (
     }
 
     // User found
-    const dataResponse = {
+    const dataResponse: CustomResponse = {
       status: "success",
       message: "Usuario encontrado",
       data: userFound,
     };
-    
+
     res.status(200).json(dataResponse);
   } catch (err) {
     ErrorHandler(
@@ -156,12 +162,15 @@ const createUser = async (
         res,
       );
     }
-    // Process Complete to create a new user.
-    res.status(201).json({
+
+    const dataResponse: CustomResponse = {
       status: "success",
       message: "El usuario ha sido creado satisfactoriamente!",
-      user: data,
-    });
+      data: data,
+    };
+
+    // Process Complete to create a new user.
+    res.status(201).json(dataResponse);
 
     // const user = res.json({ res: "Creating user" });
   } catch (err) {
@@ -206,11 +215,13 @@ const deleteUser = async (
 
     await userToDelete.destroy();
 
-    res.status(200).json({
-      status: "sucess",
+    const dataResponse: CustomResponse = {
+      status: "success",
       message: "El usuario ha sido eliminado satisfactoriamente",
       data: null,
-    });
+    };
+
+    res.status(200).json(dataResponse);
   } catch (err) {
     console.log(err);
   }
@@ -230,17 +241,21 @@ const updateUser = async (
         res,
       );
     }
+
+    const userId = parseInt(_id)
     // TODO: Search user by ID
+    const userFound = await UserSchema.findOne({ where: { _id: userId } });
 
-    const userFound = await UserSchema.findOne({ where: { _id: _id } });
+    console.log("userFound: ", userFound);
+
     // TODO: Confirm that the user exist, if do not exist, then send message.
-
     if (!userFound) {
       return ErrorHandler(
         { statusCode: 404, message: "Usuario no encontrado" },
         res,
       );
     }
+
     // TODO: If user existing then, update the user data.
     const {
       registration_date,
@@ -258,6 +273,8 @@ const updateUser = async (
       plan,
       age,
     } = req.body;
+    console.log("req.body: ", req.body);
+    // user.registration_date  user.last_payment  user.days_of_debt  user.last_update
     const userUpdated /* : UserBody */ = {
       _id: _id,
       registration_date,
@@ -280,6 +297,14 @@ const updateUser = async (
     userFound.set(userUpdated);
 
     await userFound.save();
+
+    const dataResponse: CustomResponse = {
+      status: "success",
+      message: "el usuario ha sido actualizado satisfactoriamente!",
+      data: null,
+    };
+
+    res.status(200).json(dataResponse);
   } catch (err) {
     console.log(err);
   }

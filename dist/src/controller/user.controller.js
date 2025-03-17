@@ -12,7 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.getUsers = exports.pagination = exports.createUser = exports.deleteUser = exports.updateUser = exports.getUserById = void 0;
 const user_schema_1 = require("../models/user.schema");
 const ErrorHandler_1 = require("../helpers/ErrorHandler");
-// Get all users
+// READ all users
 const getUsers = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // const user = req.body.name;
@@ -26,8 +26,13 @@ const getUsers = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
                 message: "No se encontraron usuarios en la base de datos",
             }, res);
         }
+        const dataResponse = {
+            status: "success",
+            message: "Usuarios encontrados",
+            data: users,
+        };
         // Users found
-        res.status(200).json({ message: "Usuarios encontrados", data: users });
+        res.status(200).json(dataResponse);
     }
     catch (err) {
         (0, ErrorHandler_1.ErrorHandler)({
@@ -37,11 +42,11 @@ const getUsers = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     }
 });
 exports.getUsers = getUsers;
-// Get user By Id
+// READ user By Id
 const getUserById = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { _id } = req.params;
-        console.log("Received ID:", _id);
+        // console.log("Received ID:", _id);
         const userId = parseInt(_id);
         // If there is problem with the request
         if (!userId || isNaN(userId)) {
@@ -51,16 +56,16 @@ const getUserById = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
         const userFound = yield user_schema_1.UserSchema.findOne({
             where: { _id: userId },
         });
-        // User not found
+        // if User not found
         if (!userFound) {
             return (0, ErrorHandler_1.ErrorHandler)({ statusCode: 404, message: "Usuario no encontrado" }, res);
         }
+        // User found
         const dataResponse = {
             status: "success",
             message: "Usuario encontrado",
             data: userFound,
         };
-        // User found
         res.status(200).json(dataResponse);
     }
     catch (err) {
@@ -68,11 +73,11 @@ const getUserById = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
     }
 });
 exports.getUserById = getUserById;
-// Create user
+// CREATE user
 const createUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        // TODO: Verify if the req.body doesn't empty.
-        // TODO: Verify if the user hasn't already been created. The DNI should be used for that validation.
+        // TODO: Verify if the req.body don't empty.
+        // TODO: Verify if the user hasn't been created yet. The DNI should be used for that validation.
         const userToCreate = req.body;
         if (!userToCreate) {
             return (0, ErrorHandler_1.ErrorHandler)({ statusCode: 400, message: "El cuerpo de la solicitud está vacío" }, res);
@@ -110,12 +115,13 @@ const createUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
                 message: "Hubo un problema para crear el registro.",
             }, res);
         }
-        // Process Complete to create a new user.
-        res.status(201).json({
+        const dataResponse = {
             status: "success",
             message: "El usuario ha sido creado satisfactoriamente!",
-            user: data,
-        });
+            data: data,
+        };
+        // Process Complete to create a new user.
+        res.status(201).json(dataResponse);
         // const user = res.json({ res: "Creating user" });
     }
     catch (err) {
@@ -127,25 +133,27 @@ exports.createUser = createUser;
 // DELETE user by Id
 const deleteUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        // Find user to delete
+        // Receive the Id of the user to delete
         const { _id } = req.params; // ID of user
-        // if id doesn't exist
-        if (!_id) {
+        // if id don't exist
+        if (!_id || !parseInt(_id)) {
             return (0, ErrorHandler_1.ErrorHandler)({ statusCode: 404, message: "No fue suministrada un id de usuario" }, res);
         }
         // If id exists
+        const userId = parseInt(_id);
         const userToDelete = yield user_schema_1.UserSchema.findOne({
-            where: { _id: _id },
+            where: { _id: userId },
         });
         if (!userToDelete) {
             return (0, ErrorHandler_1.ErrorHandler)({ statusCode: 404, message: "Usuario no encontrado" }, res);
         }
         yield userToDelete.destroy();
-        res.status(200).json({
-            status: "sucess",
+        const dataResponse = {
+            status: "success",
             message: "El usuario ha sido eliminado satisfactoriamente",
             data: null,
-        });
+        };
+        res.status(200).json(dataResponse);
     }
     catch (err) {
         console.log(err);
@@ -155,11 +163,49 @@ exports.deleteUser = deleteUser;
 // UPDATE user by Id
 const updateUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        // TODO: Read ID from request
+        // TODO: Read ID from request and body.
+        const { _id } = req.params;
+        if (!_id || !req.body) {
+            return (0, ErrorHandler_1.ErrorHandler)({ statusCode: 404, message: "Problemas con la solicitud." }, res);
+        }
+        const userId = parseInt(_id);
         // TODO: Search user by ID
+        const userFound = yield user_schema_1.UserSchema.findOne({ where: { _id: userId } });
+        console.log("userFound: ", userFound);
         // TODO: Confirm that the user exist, if do not exist, then send message.
-        // TODO: If user existing then update the user data.
+        if (!userFound) {
+            return (0, ErrorHandler_1.ErrorHandler)({ statusCode: 404, message: "Usuario no encontrado" }, res);
+        }
+        // TODO: If user existing then, update the user data.
+        const { registration_date, trainer_name, last_payment, days_of_debt, trainer_dni, last_update, invoices_id, trainer_id, last_name, user_dni, weight, name, plan, age, } = req.body;
+        console.log("req.body: ", req.body);
+        // user.registration_date  user.last_payment  user.days_of_debt  user.last_update
+        const userUpdated /* : UserBody */ = {
+            _id: _id,
+            registration_date,
+            trainer_name,
+            last_payment,
+            days_of_debt,
+            trainer_dni,
+            last_update,
+            invoices_id,
+            trainer_id,
+            last_name,
+            user_dni,
+            weight,
+            name,
+            plan,
+            age,
+        };
         // TODO: if data has been updated, then the API will send a success message.
+        userFound.set(userUpdated);
+        yield userFound.save();
+        const dataResponse = {
+            status: "success",
+            message: "el usuario ha sido actualizado satisfactoriamente!",
+            data: null,
+        };
+        res.status(200).json(dataResponse);
     }
     catch (err) {
         console.log(err);

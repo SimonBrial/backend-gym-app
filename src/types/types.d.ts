@@ -1,3 +1,5 @@
 type trainerPlan = "monthly" | "weekly" | "daily";
 
-export type { trainerPlan };
+type statusStr = "success" | "failed";
+
+export type { trainerPlan, statusStr };
