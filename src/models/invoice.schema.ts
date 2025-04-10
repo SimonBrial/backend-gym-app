@@ -9,19 +9,19 @@ export const InvoiceSchema = sequelize.define(
       allowNull: false,
       primaryKey: true,
     },
-    invoice_id: {
-      type: DataTypes.STRING(20),
+    invoiceId: {
+      type: DataTypes.STRING(50),
       allowNull: false,
     },
-    client_dni: {
+    userDni: {
       type: DataTypes.STRING(15),
       allowNull: false,
     },
-    client_name: {
+    userName: {
       type: DataTypes.STRING(30),
       allowNull: false,
     },
-    client_last_name: {
+    userLastName: {
       type: DataTypes.STRING(30),
       allowNull: false,
     },
@@ -29,27 +29,27 @@ export const InvoiceSchema = sequelize.define(
       type: DataTypes.INTEGER,
       allowNull: true,
     }, */
-    trainer_dni: {
-      type: DataTypes.STRING, // The length of the DNI should be define
+    trainerDni: {
+      type: DataTypes.STRING(50), // The length of the DNI should be define
       allowNull: true,
-      unique: true,
+      unique: false,
       defaultValue: "No asignado",
     },
-    trainer_name: {
-      type: DataTypes.STRING(20),
-      allowNull: true,
-      defaultValue: "No asignado",
-    },
-    trainer_last_name: {
-      type: DataTypes.STRING(20),
+    trainerName: {
+      type: DataTypes.STRING(30),
       allowNull: true,
       defaultValue: "No asignado",
     },
-    first_date: {
+    trainerLastName: {
+      type: DataTypes.STRING(30),
+      allowNull: true,
+      defaultValue: "No asignado",
+    },
+    firstDate: {
       type: DataTypes.DATE,
       allowNull: false,
     },
-    last_date: {
+    lastDate: {
       type: DataTypes.DATE,
       allowNull: false,
     },

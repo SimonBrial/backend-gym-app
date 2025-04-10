@@ -11,7 +11,7 @@ export const UserSchema = sequelize.define(
       autoIncrement: true,
       primaryKey: true,
     },
-    user_dni: {
+    userDni: {
       type: DataTypes.STRING(15),
       allowNull: false,
       unique: true,
@@ -20,7 +20,7 @@ export const UserSchema = sequelize.define(
       type: DataTypes.STRING(30),
       allowNull: false,
     },
-    last_name: {
+    lastName: {
       type: DataTypes.STRING(30),
       allowNull: false,
     },
@@ -36,44 +36,44 @@ export const UserSchema = sequelize.define(
       type: DataTypes.ENUM("monthly", "weekly", "daily"),
       allowNull: false,
     },
-    registration_date: {
+    registrationDate: {
       type: DataTypes.DATE,
       allowNull: false,
       defaultValue: dt.toISOString(),
     },
-    last_payment: {
+    lastPayment: {
       type: DataTypes.DATE,
       allowNull: false,
     },
-    days_of_debt: {
+    daysOfDebt: {
       type: DataTypes.INTEGER,
       allowNull: false,
       defaultValue: 0,
     },
-    trainer_id: {
+    trainerId: {
       // Id  from the DDBB
       type: DataTypes.STRING(6),
       allowNull: true,
       // unique: true,
       defaultValue: "000000",
     },
-    trainer_dni: {
+    trainerDni: {
       type: DataTypes.STRING(10), // The length of the DNI should be define
       allowNull: true,
       // unique: true,
       defaultValue: "No asignado",
     },
-    trainer_name: {
+    trainerName: {
       type: DataTypes.STRING(50),
       allowNull: true,
       defaultValue: "No asignado",
     },
-    last_update: {
+    lastUpdate: {
       type: DataTypes.DATE,
       allowNull: false,
       defaultValue: dt.toISOString(),
     },
-    invoices_id: {
+    invoicesArray: {
       type: DataTypes.ARRAY(DataTypes.STRING()),
       allowNull: true,
       defaultValue: [],

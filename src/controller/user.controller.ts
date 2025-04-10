@@ -4,14 +4,19 @@ import { ErrorHandler } from "../helpers/ErrorHandler";
 import {
   CustomRequest,
   CustomResponse,
+  InvoiceBody,
   UserBody,
 } from "../interface/interface";
+import { invoiceDaysCalculator } from "../helpers/invoiceDaysCalc";
+import { InvoiceSchema } from "../models/invoice.schema";
 
 // READ all users
 const getUsers = async (req: Request, res: Response): Promise<void> => {
   try {
     // const user = req.body.name;
-    const users = await UserSchema.findAll();
+    const users: UserBody[] = (await UserSchema.findAll()).map((user) =>
+      user.toJSON(),
+    );
     console.log("users: ", users);
 
     // No users found
@@ -26,10 +31,27 @@ const getUsers = async (req: Request, res: Response): Promise<void> => {
       );
     }
 
+    // If user not null
+    // Searching invoices
+    const invoicesArray: InvoiceBody[] = (await InvoiceSchema.findAll()).map(
+      (inv) => inv.toJSON(),
+    );
+    const newData = users
+      .map((user) => {
+        const userInvoices = invoicesArray.filter(
+          (inv) => inv.userDni === user.userDni,
+        );
+        return {
+          ...user,
+          invoicesArray: userInvoices,
+        };
+      })
+      .filter((data: any) => data !== undefined);
+
     const dataResponse: CustomResponse = {
       status: "success",
       message: "Usuarios encontrados",
-      data: users,
+      data: newData,
     };
 
     // Users found
@@ -109,17 +131,20 @@ const createUser = async (
     }
 
     const {
-      trainer_dni,
-      trainer_id,
-      last_name,
-      user_dni,
+      invoicesArray,
+      trainerDni,
+      trainerId,
+      lastName,
+      userDni,
       weight,
       plan,
       name,
       age,
     } = req.body;
 
-    const sameUsers = await UserSchema.findAll({ where: { user_dni } });
+    const sameUsers = (await UserSchema.findAll({ where: { userDni } })).map(
+      (user) => user.toJSON(),
+    );
 
     if (sameUsers && sameUsers.length > 0) {
       return ErrorHandler(
@@ -130,22 +155,22 @@ const createUser = async (
 
     const totalUsers = await UserSchema.findAll();
 
-    const user /* : UserBody */ = {
+    const user = {
       _id: totalUsers.length + 1,
-      user_dni,
+      userDni,
       name,
-      last_name,
+      lastName,
       age,
       weight,
-      trainer_id,
-      trainer_dni,
+      trainerId,
+      trainerDni,
       plan,
-      registration_date: new Date(),
-      last_payment: new Date(),
-      last_update: new Date(),
-      days_of_debt: 0,
-      trainer_name: "",
-      invoices_id: [""],
+      registrationDate: new Date(),
+      lastPayment: new Date(),
+      lastUpdate: new Date(),
+      daysOfDebt: 0,
+      trainerName: "",
+      invoicesArray: [""],
       // createdAt: new Date(),
       // updatedAt: new Date(),
     };
@@ -162,11 +187,73 @@ const createUser = async (
         res,
       );
     }
+    // On these place i will add the code to create the first invoice for the user.
+
+    const totalInvoices = (await InvoiceSchema.findAll()).map((invoice) =>
+      invoice.toJSON(),
+    );
+    const invoiceDays = invoiceDaysCalculator(plan);
+    if (typeof invoiceDays === "string") {
+      return ErrorHandler(
+        {
+          statusCode: 400,
+          message: "El plan del usuario es inválido.",
+        },
+        res,
+      );
+    }
+
+    const { firstDay, lastDay } = invoiceDays;
+    const firstInvoice = {
+      _id: totalInvoices.length + 1, // Genera un ID único para la factura.
+      userLastName: lastName,
+      trainerDni,
+      invoiceId: crypto.randomUUID(),
+      firstDate: firstDay,
+      userName: name,
+      lastDate: lastDay,
+      userDni,
+      amount: 100, // TODO --> Ajusta el monto según el plan.
+      plan,
+    };
+    const createdInvoice = await InvoiceSchema.create(firstInvoice);
+    if (!createdInvoice) {
+      return ErrorHandler(
+        {
+          statusCode: 400,
+          message: "Hubo un problema para crear la primera factura.",
+        },
+        res,
+      );
+    }
+
+    // Asegúrate de que invoicesArray sea un array
+    if (!Array.isArray(data.dataValues.invoicesArray)) {
+      data.dataValues.invoicesArray = [];
+    }
+    // Agrega el ID de la factura y filtra valores vacíos
+    data.dataValues.invoicesArray = [
+      ...data.dataValues.invoicesArray,
+      createdInvoice.dataValues.invoiceId,
+    ].filter((inv) => inv !== "");
+
+
+    await data.update(
+      { invoicesArray: data.dataValues.invoicesArray },
+      { where: { userDni } },
+    );
+
+    await data.save();
+
+    const dataUpdated = {
+      ...data.toJSON(),
+      invoicesArray: createdInvoice.toJSON()
+    }
 
     const dataResponse: CustomResponse = {
       status: "success",
       message: "El usuario ha sido creado satisfactoriamente!",
-      data: data,
+      data: dataUpdated,
     };
 
     // Process Complete to create a new user.
@@ -242,7 +329,7 @@ const updateUser = async (
       );
     }
 
-    const userId = parseInt(_id)
+    const userId = parseInt(_id);
     // TODO: Search user by ID
     const userFound = await UserSchema.findOne({ where: { _id: userId } });
 
@@ -258,35 +345,35 @@ const updateUser = async (
 
     // TODO: If user existing then, update the user data.
     const {
-      registration_date,
-      trainer_name,
-      last_payment,
-      days_of_debt,
-      trainer_dni,
-      last_update,
-      invoices_id,
-      trainer_id,
-      last_name,
-      user_dni,
+      registrationDate,
+      trainerName,
+      lastPayment,
+      daysOfDebt,
+      trainerDni,
+      lastUpdate,
+      invoicesArray,
+      trainerId,
+      lastName,
+      userDni,
       weight,
       name,
       plan,
       age,
     } = req.body;
     console.log("req.body: ", req.body);
-    // user.registration_date  user.last_payment  user.days_of_debt  user.last_update
+    // user.registrationDate  user.lastPayment  user.daysOfDebt  user.last_update
     const userUpdated /* : UserBody */ = {
       _id: _id,
-      registration_date,
-      trainer_name,
-      last_payment,
-      days_of_debt,
-      trainer_dni,
-      last_update,
-      invoices_id,
-      trainer_id,
-      last_name,
-      user_dni,
+      registrationDate,
+      trainerName,
+      lastPayment,
+      daysOfDebt,
+      trainerDni,
+      lastUpdate,
+      invoicesArray,
+      trainerId,
+      lastName,
+      userDni,
       weight,
       name,
       plan,

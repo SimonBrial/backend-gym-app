@@ -12,7 +12,7 @@ exports.TrainerSchema = db_1.default.define("trainer", {
         allowNull: false,
         primaryKey: true,
     },
-    trainer_dni: {
+    trainerDni: {
         type: sequelize_1.DataTypes.STRING(15),
         allowNull: false,
     },
@@ -20,7 +20,7 @@ exports.TrainerSchema = db_1.default.define("trainer", {
         type: sequelize_1.DataTypes.STRING(30),
         allowNull: false,
     },
-    last_name: {
+    lastName: {
         type: sequelize_1.DataTypes.STRING(30),
         allowNull: false,
     },
@@ -33,7 +33,7 @@ exports.TrainerSchema = db_1.default.define("trainer", {
         allowNull: true,
         defaultValue: "No indicado",
     },
-    assigned_clients: {
+    assignedClients: {
         type: sequelize_1.DataTypes.ARRAY(sequelize_1.DataTypes.STRING()),
         allowNull: true,
         defaultValue: [],

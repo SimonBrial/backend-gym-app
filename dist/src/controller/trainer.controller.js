@@ -97,12 +97,12 @@ const updateTrainer = (req, res) => __awaiter(void 0, void 0, void 0, function* 
             return (0, ErrorHandler_1.ErrorHandler)({ statusCode: 404, message: "Trainer no encontrado" }, res);
         }
         // TODO: If trainer existing then, update the trainer data.
-        const { age, area, assigned_clients, last_name, name, trainer_dni } = req.body;
+        const { age, area, assignedClients, lastName, name, trainerDni } = req.body;
         const userUpdated /* : TrainerBody */ = {
             _id: _id,
-            assigned_clients,
-            trainer_dni,
-            last_name,
+            assignedClients,
+            trainerDni,
+            lastName,
             area,
             name,
             age,
@@ -176,17 +176,17 @@ const createTrainer = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         if (!trainerToCreate) {
             return (0, ErrorHandler_1.ErrorHandler)({ statusCode: 400, message: "El cuerpo de la solicitud está vacío" }, res);
         }
-        const { age, area, last_name, name, trainer_dni, assigned_clients } = req.body;
-        const sameTrainer = yield trainer_schema_1.TrainerSchema.findAll({ where: { trainer_dni } });
+        const { age, area, lastName, name, trainerDni, assignedClients } = req.body;
+        const sameTrainer = yield trainer_schema_1.TrainerSchema.findAll({ where: { trainerDni } });
         if (sameTrainer && sameTrainer.length > 0) {
             return (0, ErrorHandler_1.ErrorHandler)({ statusCode: 409, message: "Ya existe un entrenador con ese DNI" }, res);
         }
         const totalTrainer = yield trainer_schema_1.TrainerSchema.findAll();
         const trainer = {
             _id: totalTrainer.length + 1,
-            assigned_clients,
-            trainer_dni,
-            last_name,
+            assignedClients,
+            trainerDni,
+            lastName,
             area,
             name,
             age,

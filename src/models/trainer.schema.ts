@@ -9,7 +9,7 @@ export const TrainerSchema = sequelize.define(
       allowNull: false,
       primaryKey: true,
     },
-    trainer_dni: {
+    trainerDni: {
       type: DataTypes.STRING(15),
       allowNull: false,
     },
@@ -17,7 +17,7 @@ export const TrainerSchema = sequelize.define(
       type: DataTypes.STRING(30),
       allowNull: false,
     },
-    last_name: {
+    lastName: {
       type: DataTypes.STRING(30),
       allowNull: false,
     },
@@ -30,7 +30,7 @@ export const TrainerSchema = sequelize.define(
       allowNull: true,
       defaultValue: "No indicado",
     },
-    assigned_clients: {
+    assignedClients: {
       type: DataTypes.ARRAY(DataTypes.STRING()),
       allowNull: true,
       defaultValue: [],

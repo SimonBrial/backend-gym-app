@@ -8,80 +8,85 @@ interface IErrorHandler {
 
 interface UserBody {
   _id: number; // This is not the client Id, it's just for the DB requeriments.
-  user_dni: string;
+  userDni: string;
   name: string;
-  last_name: string;
+  lastName: string;
   weight: number;
   age: number;
   plan: trainerPlan;
-  registration_date: Date;
-  last_payment: Date;
-  days_of_debt: number;
-  trainer_id?: string;
-  trainer_dni?: string;
-  trainer_name?: string;
-  last_update: Date;
-  invoices_id?: string[];
+  registrationDate: Date;
+  lastPayment: Date;
+  daysOfDebt: number;
+  trainerId?: string;
+  trainerDni?: string;
+  trainerName?: string;
+  lastUpdate: Date;
+  invoicesArray?: any[];
   /*  createdAt: Date;
   updatedAt: Date; */
 }
 
 interface InvoiceBody {
   _id: number;
-  invoice_id: string;
-  client_dni: string;
-  client_name: string;
-  client_last_name: string;
+  invoiceId: string;
+  userDni: string;
+  userName: string;
+  userLastName: string;
   // trainer_id?: number;
-  trainer_dni?: string;
-  trainer_name?: string;
-  trainer_last_name?: string;
-  first_date: Date;
-  last_date: Date;
+  trainerDni?: string;
+  trainerName?: string;
+  trainerLastName?: string;
+  firstDate: Date;
+  lastDate: Date;
   amount: number;
   plan: trainerPlan;
 }
 
+interface AmountBody {
+  _id: number;
+  cost: number;
+  name: string;
+}
 
 interface UserBodyCreating {
-  user_dni: string;
+  userDni: string;
   name: string;
-  last_name: string;
+  lastName: string;
   weight: number;
   plan: trainerPlan;
   age: number;
-  trainer_dni?: string;
-  trainer_id?: string;
+  trainerDni?: string;
+  trainerId?: string;
 }
 
 interface TrainerBody {
   _id: number; // This is not the client Id, it's just for the DB requeriments.
-  trainer_dni: string;
+  trainerDni: string;
   name: string;
-  last_name: string;
+  lastName: string;
   age: number;
   area: string;
-  assigned_clients: string[];
+  assignedClients: string[];
 }
 interface TrainerBodyCreating {
   _id: number; // This is not the client Id, it's just for the DB requeriments.
-  trainer_dni: string;
+  trainerDni: string;
   name: string;
-  last_name: string;
+  lastName: string;
   age: number;
   area: string;
 }
 
 interface UserCreateBody {
   _id: number; // This is not the client Id, it's just for the DB requeriments.
-  user_dni: string;
+  userDni: string;
   name: string;
-  last_name: string;
+  lastName: string;
   weight: number;
   age: number;
   plan: trainerPlan;
-  trainer_dni?: string;
-  trainer_name?: string;
+  trainerDni?: string;
+  trainerName?: string;
   /* createdAt: Date;
   updatedAt: Date; */
 }
@@ -93,6 +98,7 @@ interface RequestQuery {
 
 interface RequestParams {
   _id: string;
+  name?: string;
 }
 
 interface CustomRequest<T> extends Request {
@@ -107,7 +113,13 @@ interface CustomResponse {
   data: any;
 }
 
+interface InvoiceDaysCalculator {
+  firstDay: Date;
+  lastDay: Date;
+}
+
 export type {
+  InvoiceDaysCalculator,
   TrainerBodyCreating,
   UserBodyCreating,
   CustomResponse,
@@ -117,5 +129,6 @@ export type {
   RequestQuery,
   InvoiceBody,
   TrainerBody,
+  AmountBody,
   UserBody,
 };

@@ -129,13 +129,13 @@ const updateTrainer = async (
     }
 
     // TODO: If trainer existing then, update the trainer data.
-    const { age, area, assigned_clients, last_name, name, trainer_dni } =
+    const { age, area, assignedClients, lastName, name, trainerDni } =
       req.body;
     const userUpdated /* : TrainerBody */ = {
       _id: _id,
-      assigned_clients,
-      trainer_dni,
-      last_name,
+      assignedClients,
+      trainerDni,
+      lastName,
       area,
       name,
       age,
@@ -243,10 +243,10 @@ const createTrainer = async (
       );
     }
 
-    const { age, area, last_name, name, trainer_dni, assigned_clients } =
+    const { age, area, lastName, name, trainerDni, assignedClients } =
       req.body;
 
-    const sameTrainer = await TrainerSchema.findAll({ where: { trainer_dni } });
+    const sameTrainer = await TrainerSchema.findAll({ where: { trainerDni } });
 
     if (sameTrainer && sameTrainer.length > 0) {
       return ErrorHandler(
@@ -259,9 +259,9 @@ const createTrainer = async (
 
     const trainer = {
       _id: totalTrainer.length + 1,
-      assigned_clients,
-      trainer_dni,
-      last_name,
+      assignedClients,
+      trainerDni,
+      lastName,
       area,
       name,
       age,

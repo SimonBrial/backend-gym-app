@@ -13,7 +13,7 @@ exports.UserSchema = db_1.default.define("user", {
         autoIncrement: true,
         primaryKey: true,
     },
-    user_dni: {
+    userDni: {
         type: sequelize_1.DataTypes.STRING(15),
         allowNull: false,
         unique: true,
@@ -22,7 +22,7 @@ exports.UserSchema = db_1.default.define("user", {
         type: sequelize_1.DataTypes.STRING(30),
         allowNull: false,
     },
-    last_name: {
+    lastName: {
         type: sequelize_1.DataTypes.STRING(30),
         allowNull: false,
     },
@@ -38,44 +38,44 @@ exports.UserSchema = db_1.default.define("user", {
         type: sequelize_1.DataTypes.ENUM("monthly", "weekly", "daily"),
         allowNull: false,
     },
-    registration_date: {
+    registrationDate: {
         type: sequelize_1.DataTypes.DATE,
         allowNull: false,
         defaultValue: dt.toISOString(),
     },
-    last_payment: {
+    lastPayment: {
         type: sequelize_1.DataTypes.DATE,
         allowNull: false,
     },
-    days_of_debt: {
+    daysOfDebt: {
         type: sequelize_1.DataTypes.INTEGER,
         allowNull: false,
         defaultValue: 0,
     },
-    trainer_id: {
+    trainerId: {
         // Id  from the DDBB
         type: sequelize_1.DataTypes.STRING(6),
         allowNull: true,
         // unique: true,
         defaultValue: "000000",
     },
-    trainer_dni: {
+    trainerDni: {
         type: sequelize_1.DataTypes.STRING(10), // The length of the DNI should be define
         allowNull: true,
         // unique: true,
         defaultValue: "No asignado",
     },
-    trainer_name: {
+    trainerName: {
         type: sequelize_1.DataTypes.STRING(50),
         allowNull: true,
         defaultValue: "No asignado",
     },
-    last_update: {
+    lastUpdate: {
         type: sequelize_1.DataTypes.DATE,
         allowNull: false,
         defaultValue: dt.toISOString(),
     },
-    invoices_id: {
+    invoicesArray: {
         type: sequelize_1.DataTypes.ARRAY(sequelize_1.DataTypes.STRING()),
         allowNull: true,
         defaultValue: [],

@@ -12,19 +12,19 @@ exports.InvoiceSchema = db_1.default.define("invoice", {
         allowNull: false,
         primaryKey: true,
     },
-    invoice_id: {
-        type: sequelize_1.DataTypes.STRING(20),
+    invoiceId: {
+        type: sequelize_1.DataTypes.STRING(50),
         allowNull: false,
     },
-    client_dni: {
+    userDni: {
         type: sequelize_1.DataTypes.STRING(15),
         allowNull: false,
     },
-    client_name: {
+    userName: {
         type: sequelize_1.DataTypes.STRING(30),
         allowNull: false,
     },
-    client_last_name: {
+    userLastName: {
         type: sequelize_1.DataTypes.STRING(30),
         allowNull: false,
     },
@@ -32,27 +32,27 @@ exports.InvoiceSchema = db_1.default.define("invoice", {
       type: DataTypes.INTEGER,
       allowNull: true,
     }, */
-    trainer_dni: {
-        type: sequelize_1.DataTypes.STRING, // The length of the DNI should be define
+    trainerDni: {
+        type: sequelize_1.DataTypes.STRING(50), // The length of the DNI should be define
         allowNull: true,
-        unique: true,
+        unique: false,
         defaultValue: "No asignado",
     },
-    trainer_name: {
-        type: sequelize_1.DataTypes.STRING(20),
-        allowNull: true,
-        defaultValue: "No asignado",
-    },
-    trainer_last_name: {
-        type: sequelize_1.DataTypes.STRING(20),
+    trainerName: {
+        type: sequelize_1.DataTypes.STRING(30),
         allowNull: true,
         defaultValue: "No asignado",
     },
-    first_date: {
+    trainerLastName: {
+        type: sequelize_1.DataTypes.STRING(30),
+        allowNull: true,
+        defaultValue: "No asignado",
+    },
+    firstDate: {
         type: sequelize_1.DataTypes.DATE,
         allowNull: false,
     },
-    last_date: {
+    lastDate: {
         type: sequelize_1.DataTypes.DATE,
         allowNull: false,
     },
