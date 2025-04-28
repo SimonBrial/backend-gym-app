@@ -1,7 +1,7 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../db";
 
-export const InvoiceSchema = sequelize.define(
+export const InvoiceModel = sequelize.define(
   "invoice",
   {
     _id: {

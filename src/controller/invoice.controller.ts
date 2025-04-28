@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { InvoiceSchema } from "../models/invoice.schema";
+import { InvoiceModel } from "../models/invoice.model";
 import { ErrorHandler } from "../helpers/ErrorHandler";
 import {
   InvoiceDaysCalculator,
@@ -8,13 +8,13 @@ import {
   InvoiceBody,
 } from "../interface/interface";
 import { invoiceDaysCalculator } from "../helpers/invoiceDaysCalc";
-import { UserSchema } from "../models/user.schema";
+import { UserModel } from "../models/user.model";
 
 // READ all users
 const getInvoices = async (req: Request, res: Response): Promise<void> => {
   try {
     // Search in the DDBB
-    const invoices = await InvoiceSchema.findAll();
+    const invoices = await InvoiceModel.findAll();
 
     // If there are not any invoices found
     if (!invoices || invoices.length === 0) {
@@ -67,7 +67,7 @@ const getInvoiceById = async (
     }
 
     // If _id exist
-    const invoiceFound = await InvoiceSchema.findOne({
+    const invoiceFound = await InvoiceModel.findOne({
       where: {
         _id: invoiceId,
       },
@@ -128,7 +128,7 @@ const createInvoice = async (
     } = req.body;
 
     // Is there an user with the userDni string?
-    const userExisting = await UserSchema.findAll({
+    const userExisting = await UserModel.findAll({
       where: { userDni },
     });
 
@@ -161,7 +161,7 @@ const createInvoice = async (
       );
     }
 
-    /* const sameInvoices = await InvoiceSchema.findAll({ where: { invoiceId } });
+    /* const sameInvoices = await InvoiceModel.findAll({ where: { invoiceId } });
     console.log("sameInvoices --> ", sameInvoices);
 
     if (sameInvoices && sameInvoices.length > 0) {
@@ -175,7 +175,7 @@ const createInvoice = async (
       );
     } */
 
-    const totalInvoices = await InvoiceSchema.findAll();
+    const totalInvoices = await InvoiceModel.findAll();
 
     const invoicesDays = invoiceDaysCalculator(plan);
     if (typeof invoicesDays === "string") {
@@ -208,7 +208,7 @@ const createInvoice = async (
       // updatedAt: new Date(),
     };
 
-    const data = await InvoiceSchema.create(newInvoice);
+    const data = await InvoiceModel.create(newInvoice);
     console.log("---> data:", data);
 
     if (!data) {
@@ -275,7 +275,7 @@ const deleteInvoice = async (
     // If id exists
     const invoiceId = parseInt(_id);
 
-    const invoiceToDelete = await InvoiceSchema.findOne({
+    const invoiceToDelete = await InvoiceModel.findOne({
       where: { _id: invoiceId },
     });
 

@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { ErrorHandler } from "../helpers/ErrorHandler";
-import { TrainerSchema } from "../models/trainer.schema";
+import { TrainerModel } from "../models/trainer.model";
 import {
   CustomResponse,
   CustomRequest,
@@ -11,7 +11,7 @@ import {
 const getTrainers = async (req: Request, res: Response): Promise<void> => {
   try {
     // Searching all trainer
-    const trainers = await TrainerSchema.findAll();
+    const trainers = await TrainerModel.findAll();
 
     // if not found trainers in the DDBB.
     if (!trainers || trainers.length === 0) {
@@ -68,7 +68,7 @@ const getTrainerById = async (
     }
 
     // if there isn't problem with the params of the request.
-    const trainerFound = await TrainerSchema.findOne({
+    const trainerFound = await TrainerModel.findOne({
       where: { _id: trainerId },
     });
 
@@ -100,6 +100,83 @@ const getTrainerById = async (
     );
   }
 };
+
+// CREATE trainer
+const createTrainer = async (
+  req: CustomRequest<TrainerBody>,
+  res: Response,
+): Promise<void> => {
+  try {
+    // TODO: Verify if the req.body don't empty.
+    // TODO: Verify if the user hasn't been created yet. The DNI should be used for that validation.
+
+    const trainerToCreate = req.body;
+
+    if (!trainerToCreate) {
+      return ErrorHandler(
+        { statusCode: 400, message: "El cuerpo de la solicitud está vacío" },
+        res,
+      );
+    }
+
+    const { age, area, lastName, name, trainerDni, assignedClients } =
+    trainerToCreate;
+
+    const sameTrainer = await TrainerModel.findAll({ where: { trainerDni } });
+
+    if (sameTrainer && sameTrainer.length > 0) {
+      return ErrorHandler(
+        { statusCode: 409, message: "Ya existe un entrenador con ese DNI" },
+        res,
+      );
+    }
+
+    const totalTrainer = await TrainerModel.findAll();
+
+    const trainer = {
+      _id: totalTrainer.length + 1,
+      assignedClients,
+      trainerDni,
+      lastName,
+      area,
+      name,
+      age,
+    };
+
+    const data = await TrainerModel.create(trainer);
+
+    console.log("---> data:", data);
+
+    if (!data) {
+      return ErrorHandler(
+        {
+          statusCode: 400,
+          message: "Hubo un problema para crear el registro.",
+        },
+        res,
+      );
+    }
+
+    const dataResponse: CustomResponse = {
+      status: "success",
+      message: "El entrenador ha sido creado satisfactoriamente!",
+      data: data,
+    };
+
+    // Process Complete to create a new trainer.
+    res.status(201).json(dataResponse);
+  } catch (err) {
+    console.log(err);
+    ErrorHandler(
+      {
+        statusCode: 400,
+        message: "la solicitud no ha podido ser gestionada adecuadamente.",
+      },
+      res,
+    );
+  }
+};
+
 // UPDATE trainer by Id
 const updateTrainer = async (
   req: CustomRequest<TrainerBody>,
@@ -118,7 +195,7 @@ const updateTrainer = async (
 
     const trainerId = parseInt(_id);
     // TODO: Search trainer by ID
-    const trainerFound = await TrainerSchema.findOne({ where: { _id: _id } });
+    const trainerFound = await TrainerModel.findOne({ where: { _id: trainerId } });
 
     // TODO: Confirm that the trainer exist, if do not exist, then send message.
     if (!trainerFound) {
@@ -132,7 +209,7 @@ const updateTrainer = async (
     const { age, area, assignedClients, lastName, name, trainerDni } =
       req.body;
     const userUpdated /* : TrainerBody */ = {
-      _id: _id,
+      _id: trainerId,
       assignedClients,
       trainerDni,
       lastName,
@@ -190,7 +267,7 @@ const deleteTrainer = async (
     // if there isn't problem with the params of the request.
     const trainerId = parseInt(_id);
 
-    const trainerToDelete = await TrainerSchema.findOne({
+    const trainerToDelete = await TrainerModel.findOne({
       where: { _id: trainerId },
     });
 
@@ -213,82 +290,6 @@ const deleteTrainer = async (
 
     // Sending response
     res.status(200).json(dataResponse);
-  } catch (err) {
-    console.log(err);
-    ErrorHandler(
-      {
-        statusCode: 400,
-        message: "la solicitud no ha podido ser gestionada adecuadamente.",
-      },
-      res,
-    );
-  }
-};
-
-// CREATE trainer
-const createTrainer = async (
-  req: CustomRequest<TrainerBody>,
-  res: Response,
-): Promise<void> => {
-  try {
-    // TODO: Verify if the req.body don't empty.
-    // TODO: Verify if the user hasn't been created yet. The DNI should be used for that validation.
-
-    const trainerToCreate = req.body;
-
-    if (!trainerToCreate) {
-      return ErrorHandler(
-        { statusCode: 400, message: "El cuerpo de la solicitud está vacío" },
-        res,
-      );
-    }
-
-    const { age, area, lastName, name, trainerDni, assignedClients } =
-      req.body;
-
-    const sameTrainer = await TrainerSchema.findAll({ where: { trainerDni } });
-
-    if (sameTrainer && sameTrainer.length > 0) {
-      return ErrorHandler(
-        { statusCode: 409, message: "Ya existe un entrenador con ese DNI" },
-        res,
-      );
-    }
-
-    const totalTrainer = await TrainerSchema.findAll();
-
-    const trainer = {
-      _id: totalTrainer.length + 1,
-      assignedClients,
-      trainerDni,
-      lastName,
-      area,
-      name,
-      age,
-    };
-
-    const data = await TrainerSchema.create(trainer);
-
-    console.log("---> data:", data);
-
-    if (!data) {
-      return ErrorHandler(
-        {
-          statusCode: 400,
-          message: "Hubo un problema para crear el registro.",
-        },
-        res,
-      );
-    }
-
-    const dataResponse: CustomResponse = {
-      status: "success",
-      message: "El entrenador ha sido creado satisfactoriamente!",
-      data: data,
-    };
-
-    // Process Complete to create a new trainer.
-    res.status(201).json(dataResponse);
   } catch (err) {
     console.log(err);
     ErrorHandler(

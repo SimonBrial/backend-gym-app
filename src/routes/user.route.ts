@@ -4,25 +4,26 @@ import {
   getUserById,
   updateUser,
   createUser,
-  pagination,
+  // pagination,
   getUsers,
 } from "../controller/user.controller";
 
 const userRouter = Router();
 
-// Get all users
+// READ all users
 userRouter.get("/users", getUsers);
-// Get user by ID
+
+// READ user by ID
 userRouter.get("/user/:_id", getUserById);
+
+// CREATE user
+userRouter.post("/user/create", createUser);
 
 // UPDATE user by Id
 userRouter.put("/user/u/:_id", updateUser);
 
 // DELETE user by Id
 userRouter.delete("/user/d/:_id", deleteUser);
-
-// CREATE user
-userRouter.post("/user/create", createUser);
 
 // Get a quantity of users by a number (Pagination)
 // userRouter.get("/users/:qty", pagination);

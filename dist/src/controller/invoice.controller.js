@@ -10,15 +10,15 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getInvoices = exports.deleteInvoice = exports.updateInvoice = exports.createInvoice = exports.getInvoiceById = void 0;
-const invoice_schema_1 = require("../models/invoice.schema");
+const invoice_model_1 = require("../models/invoice.model");
 const ErrorHandler_1 = require("../helpers/ErrorHandler");
 const invoiceDaysCalc_1 = require("../helpers/invoiceDaysCalc");
-const user_schema_1 = require("../models/user.schema");
+const user_model_1 = require("../models/user.model");
 // READ all users
 const getInvoices = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // Search in the DDBB
-        const invoices = yield invoice_schema_1.InvoiceSchema.findAll();
+        const invoices = yield invoice_model_1.InvoiceModel.findAll();
         // If there are not any invoices found
         if (!invoices || invoices.length === 0) {
             return (0, ErrorHandler_1.ErrorHandler)({
@@ -55,7 +55,7 @@ const getInvoiceById = (req, res) => __awaiter(void 0, void 0, void 0, function*
             }, res);
         }
         // If _id exist
-        const invoiceFound = yield invoice_schema_1.InvoiceSchema.findOne({
+        const invoiceFound = yield invoice_model_1.InvoiceModel.findOne({
             where: {
                 _id: invoiceId,
             },
@@ -91,7 +91,7 @@ const createInvoice = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         }
         const { userLastName, trainerDni, invoiceId, userName, userDni, amount, plan, } = req.body;
         // Is there an user with the userDni string?
-        const userExisting = yield user_schema_1.UserSchema.findAll({
+        const userExisting = yield user_model_1.UserModel.findAll({
             where: { userDni },
         });
         console.log("userExisting --> ", userExisting.map((user) => user.toJSON()));
@@ -110,7 +110,7 @@ const createInvoice = (req, res) => __awaiter(void 0, void 0, void 0, function* 
                 message: "Existen 2 o mas usuarios con ese DNI, no es posible crearle una factura al usuario solicitado, por favor verificarlo en la base de datos",
             }, res);
         }
-        /* const sameInvoices = await InvoiceSchema.findAll({ where: { invoiceId } });
+        /* const sameInvoices = await InvoiceModel.findAll({ where: { invoiceId } });
         console.log("sameInvoices --> ", sameInvoices);
     
         if (sameInvoices && sameInvoices.length > 0) {
@@ -123,7 +123,7 @@ const createInvoice = (req, res) => __awaiter(void 0, void 0, void 0, function* 
             res,
           );
         } */
-        const totalInvoices = yield invoice_schema_1.InvoiceSchema.findAll();
+        const totalInvoices = yield invoice_model_1.InvoiceModel.findAll();
         const invoicesDays = (0, invoiceDaysCalc_1.invoiceDaysCalculator)(plan);
         if (typeof invoicesDays === "string") {
             return (0, ErrorHandler_1.ErrorHandler)({
@@ -147,7 +147,7 @@ const createInvoice = (req, res) => __awaiter(void 0, void 0, void 0, function* 
             // createdAt: new Date(),
             // updatedAt: new Date(),
         };
-        const data = yield invoice_schema_1.InvoiceSchema.create(newInvoice);
+        const data = yield invoice_model_1.InvoiceModel.create(newInvoice);
         console.log("---> data:", data);
         if (!data) {
             return (0, ErrorHandler_1.ErrorHandler)({
@@ -194,7 +194,7 @@ const deleteInvoice = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         }
         // If id exists
         const invoiceId = parseInt(_id);
-        const invoiceToDelete = yield invoice_schema_1.InvoiceSchema.findOne({
+        const invoiceToDelete = yield invoice_model_1.InvoiceModel.findOne({
             where: { _id: invoiceId },
         });
         if (!invoiceToDelete) {

@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { UserSchema } from "../models/user.schema";
+import { UserModel } from "../models/user.model";
 import { ErrorHandler } from "../helpers/ErrorHandler";
 import {
   CustomRequest,
@@ -8,13 +8,13 @@ import {
   UserBody,
 } from "../interface/interface";
 import { invoiceDaysCalculator } from "../helpers/invoiceDaysCalc";
-import { InvoiceSchema } from "../models/invoice.schema";
+import { InvoiceModel } from "../models/invoice.model";
 
 // READ all users
 const getUsers = async (req: Request, res: Response): Promise<void> => {
   try {
     // const user = req.body.name;
-    const users: UserBody[] = (await UserSchema.findAll()).map((user) =>
+    const users: UserBody[] = (await UserModel.findAll()).map((user) =>
       user.toJSON(),
     );
     console.log("users: ", users);
@@ -33,7 +33,7 @@ const getUsers = async (req: Request, res: Response): Promise<void> => {
 
     // If user not null
     // Searching invoices
-    const invoicesArray: InvoiceBody[] = (await InvoiceSchema.findAll()).map(
+    const invoicesArray: InvoiceBody[] = (await InvoiceModel.findAll()).map(
       (inv) => inv.toJSON(),
     );
     const newData = users
@@ -84,9 +84,11 @@ const getUserById = async (
       );
     }
     // If there isn't any problem with the request
-    const userFound = await UserSchema.findOne({
-      where: { _id: userId },
-    });
+    const userFound = (
+      await UserModel.findOne({
+        where: { _id: userId },
+      })
+    )?.toJSON();
 
     // if User not found
     if (!userFound) {
@@ -96,16 +98,37 @@ const getUserById = async (
       );
     }
 
+    // Searching invoices
+    const invoicesArray: InvoiceBody[] = (
+      await InvoiceModel.findAll({
+        where: { _id: userId },
+      })
+    ).map((inv) => inv.toJSON());
+    const newData = { ...userFound, invoicesArray: invoicesArray };
+
+    // console.log("newData: ", newData);
+    /* users
+      .map((user) => {
+        const userInvoices = invoicesArray.filter(
+          (inv) => inv.userDni === user.userDni,
+        );
+        return {
+          ...user,
+          invoicesArray: userInvoices,
+        };
+      })
+      .filter((data: any) => data !== undefined); */
+
     // User found
     const dataResponse: CustomResponse = {
       status: "success",
       message: "Usuario encontrado",
-      data: userFound,
+      data: newData,
     };
 
     res.status(200).json(dataResponse);
   } catch (err) {
-    ErrorHandler(
+    return ErrorHandler(
       { statusCode: 500, message: "Ha ocurrido un error en el servidor" },
       res,
     );
@@ -131,7 +154,6 @@ const createUser = async (
     }
 
     const {
-      invoicesArray,
       trainerDni,
       trainerId,
       lastName,
@@ -142,8 +164,13 @@ const createUser = async (
       age,
     } = req.body;
 
-    const sameUsers = (await UserSchema.findAll({ where: { userDni } })).map(
-      (user) => user.toJSON(),
+    const allUsers: UserBody[] = (await UserModel.findAll()).map((user) =>
+      user.toJSON(),
+    );
+
+    const totalUsers = allUsers.length;
+    const sameUsers: UserBody[] = allUsers.filter(
+      (user: UserBody) => user.userDni === userDni,
     );
 
     if (sameUsers && sameUsers.length > 0) {
@@ -153,10 +180,8 @@ const createUser = async (
       );
     }
 
-    const totalUsers = await UserSchema.findAll();
-
     const user = {
-      _id: totalUsers.length + 1,
+      _id: totalUsers + 1,
       userDni,
       name,
       lastName,
@@ -175,7 +200,7 @@ const createUser = async (
       // updatedAt: new Date(),
     };
 
-    const data = await UserSchema.create(user);
+    const data = await UserModel.create(user);
     console.log("---> data:", data);
 
     if (!data) {
@@ -189,7 +214,7 @@ const createUser = async (
     }
     // On these place i will add the code to create the first invoice for the user.
 
-    const totalInvoices = (await InvoiceSchema.findAll()).map((invoice) =>
+    const totalInvoices = (await InvoiceModel.findAll()).map((invoice) =>
       invoice.toJSON(),
     );
     const invoiceDays = invoiceDaysCalculator(plan);
@@ -216,7 +241,7 @@ const createUser = async (
       amount: 100, // TODO --> Ajusta el monto según el plan.
       plan,
     };
-    const createdInvoice = await InvoiceSchema.create(firstInvoice);
+    const createdInvoice = await InvoiceModel.create(firstInvoice);
     if (!createdInvoice) {
       return ErrorHandler(
         {
@@ -237,7 +262,6 @@ const createUser = async (
       createdInvoice.dataValues.invoiceId,
     ].filter((inv) => inv !== "");
 
-
     await data.update(
       { invoicesArray: data.dataValues.invoicesArray },
       { where: { userDni } },
@@ -247,8 +271,8 @@ const createUser = async (
 
     const dataUpdated = {
       ...data.toJSON(),
-      invoicesArray: createdInvoice.toJSON()
-    }
+      invoicesArray: createdInvoice.toJSON(),
+    };
 
     const dataResponse: CustomResponse = {
       status: "success",
@@ -281,7 +305,7 @@ const deleteUser = async (
     // if id don't exist
     if (!_id || !parseInt(_id)) {
       return ErrorHandler(
-        { statusCode: 404, message: "No fue suministrada un id de usuario" },
+        { statusCode: 404, message: "No fue suministrada un id del usuario" },
         res,
       );
     }
@@ -289,7 +313,7 @@ const deleteUser = async (
     // If id exists
     const userId = parseInt(_id);
 
-    const userToDelete = await UserSchema.findOne({
+    const userToDelete = await UserModel.findOne({
       where: { _id: userId },
     });
 
@@ -310,7 +334,10 @@ const deleteUser = async (
 
     res.status(200).json(dataResponse);
   } catch (err) {
-    console.log(err);
+    return ErrorHandler(
+      { statusCode: 500, message: "Ha ocurrido un error en el servidor" },
+      res,
+    );
   }
 };
 // UPDATE user by Id
@@ -331,7 +358,7 @@ const updateUser = async (
 
     const userId = parseInt(_id);
     // TODO: Search user by ID
-    const userFound = await UserSchema.findOne({ where: { _id: userId } });
+    const userFound = await UserModel.findOne({ where: { _id: userId } });
 
     console.log("userFound: ", userFound);
 
@@ -393,7 +420,10 @@ const updateUser = async (
 
     res.status(200).json(dataResponse);
   } catch (err) {
-    console.log(err);
+    return ErrorHandler(
+      { statusCode: 500, message: "Ha ocurrido un error en el servidor" },
+      res,
+    );
   }
 };
 

@@ -1,7 +1,7 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../db";
 
-export const AmountSchema = sequelize.define(
+export const AmountModel = sequelize.define(
   "amount",
   {
     _id: {
@@ -14,7 +14,7 @@ export const AmountSchema = sequelize.define(
       allowNull: false,
     },
     name: {
-      type: DataTypes.STRING(15),
+      type: DataTypes.STRING(20),
       allowNull: false,
     },
   },

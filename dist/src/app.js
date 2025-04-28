@@ -8,9 +8,11 @@ require("dotenv/config");
 const connection_1 = require("./db/connection");
 const express_1 = __importDefault(require("express"));
 // import cors from "cors";
-const user_route_1 = __importDefault(require("./routes/user.route"));
 const trainer_route_1 = __importDefault(require("./routes/trainer.route"));
 const invoice_route_1 = __importDefault(require("./routes/invoice.route"));
+const amount_route_1 = __importDefault(require("./routes/amount.route"));
+const admin_route_1 = __importDefault(require("./routes/admin.route"));
+const user_route_1 = __importDefault(require("./routes/user.route"));
 const app = (0, express_1.default)();
 // CORS Settings
 const allowedOrigins = ["http://localhost:3001"];
@@ -67,6 +69,10 @@ app.use("/v1", user_route_1.default);
 app.use("/v1", trainer_route_1.default);
 // Invoice Route
 app.use("/v1", invoice_route_1.default);
+// Amount Route
+app.use("/v1", amount_route_1.default);
+// Admin Route
+app.use("/v1", admin_route_1.default);
 // Server Connection
 app.listen(config_1.default.PORT, () => console.log(`Node Server is running on http://localhost:${config_1.default.PORT}`));
 /*

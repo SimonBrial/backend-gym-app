@@ -11,12 +11,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getTrainers = exports.createTrainer = exports.deleteTrainer = exports.updateTrainer = exports.getTrainerById = void 0;
 const ErrorHandler_1 = require("../helpers/ErrorHandler");
-const trainer_schema_1 = require("../models/trainer.schema");
+const trainer_model_1 = require("../models/trainer.model");
 // READ all trainers
 const getTrainers = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // Searching all trainer
-        const trainers = yield trainer_schema_1.TrainerSchema.findAll();
+        const trainers = yield trainer_model_1.TrainerModel.findAll();
         // if not found trainers in the DDBB.
         if (!trainers || trainers.length === 0) {
             return (0, ErrorHandler_1.ErrorHandler)({
@@ -56,7 +56,7 @@ const getTrainerById = (req, res) => __awaiter(void 0, void 0, void 0, function*
             }, res);
         }
         // if there isn't problem with the params of the request.
-        const trainerFound = yield trainer_schema_1.TrainerSchema.findOne({
+        const trainerFound = yield trainer_model_1.TrainerModel.findOne({
             where: { _id: trainerId },
         });
         // if trainer not found
@@ -81,6 +81,55 @@ const getTrainerById = (req, res) => __awaiter(void 0, void 0, void 0, function*
     }
 });
 exports.getTrainerById = getTrainerById;
+// CREATE trainer
+const createTrainer = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        // TODO: Verify if the req.body don't empty.
+        // TODO: Verify if the user hasn't been created yet. The DNI should be used for that validation.
+        const trainerToCreate = req.body;
+        if (!trainerToCreate) {
+            return (0, ErrorHandler_1.ErrorHandler)({ statusCode: 400, message: "El cuerpo de la solicitud está vacío" }, res);
+        }
+        const { age, area, lastName, name, trainerDni, assignedClients } = trainerToCreate;
+        const sameTrainer = yield trainer_model_1.TrainerModel.findAll({ where: { trainerDni } });
+        if (sameTrainer && sameTrainer.length > 0) {
+            return (0, ErrorHandler_1.ErrorHandler)({ statusCode: 409, message: "Ya existe un entrenador con ese DNI" }, res);
+        }
+        const totalTrainer = yield trainer_model_1.TrainerModel.findAll();
+        const trainer = {
+            _id: totalTrainer.length + 1,
+            assignedClients,
+            trainerDni,
+            lastName,
+            area,
+            name,
+            age,
+        };
+        const data = yield trainer_model_1.TrainerModel.create(trainer);
+        console.log("---> data:", data);
+        if (!data) {
+            return (0, ErrorHandler_1.ErrorHandler)({
+                statusCode: 400,
+                message: "Hubo un problema para crear el registro.",
+            }, res);
+        }
+        const dataResponse = {
+            status: "success",
+            message: "El entrenador ha sido creado satisfactoriamente!",
+            data: data,
+        };
+        // Process Complete to create a new trainer.
+        res.status(201).json(dataResponse);
+    }
+    catch (err) {
+        console.log(err);
+        (0, ErrorHandler_1.ErrorHandler)({
+            statusCode: 400,
+            message: "la solicitud no ha podido ser gestionada adecuadamente.",
+        }, res);
+    }
+});
+exports.createTrainer = createTrainer;
 // UPDATE trainer by Id
 const updateTrainer = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
@@ -91,7 +140,7 @@ const updateTrainer = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         }
         const trainerId = parseInt(_id);
         // TODO: Search trainer by ID
-        const trainerFound = yield trainer_schema_1.TrainerSchema.findOne({ where: { _id: _id } });
+        const trainerFound = yield trainer_model_1.TrainerModel.findOne({ where: { _id: trainerId } });
         // TODO: Confirm that the trainer exist, if do not exist, then send message.
         if (!trainerFound) {
             return (0, ErrorHandler_1.ErrorHandler)({ statusCode: 404, message: "Trainer no encontrado" }, res);
@@ -99,7 +148,7 @@ const updateTrainer = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         // TODO: If trainer existing then, update the trainer data.
         const { age, area, assignedClients, lastName, name, trainerDni } = req.body;
         const userUpdated /* : TrainerBody */ = {
-            _id: _id,
+            _id: trainerId,
             assignedClients,
             trainerDni,
             lastName,
@@ -141,7 +190,7 @@ const deleteTrainer = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         }
         // if there isn't problem with the params of the request.
         const trainerId = parseInt(_id);
-        const trainerToDelete = yield trainer_schema_1.TrainerSchema.findOne({
+        const trainerToDelete = yield trainer_model_1.TrainerModel.findOne({
             where: { _id: trainerId },
         });
         // if trainer not found
@@ -167,53 +216,4 @@ const deleteTrainer = (req, res) => __awaiter(void 0, void 0, void 0, function* 
     }
 });
 exports.deleteTrainer = deleteTrainer;
-// CREATE trainer
-const createTrainer = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        // TODO: Verify if the req.body don't empty.
-        // TODO: Verify if the user hasn't been created yet. The DNI should be used for that validation.
-        const trainerToCreate = req.body;
-        if (!trainerToCreate) {
-            return (0, ErrorHandler_1.ErrorHandler)({ statusCode: 400, message: "El cuerpo de la solicitud está vacío" }, res);
-        }
-        const { age, area, lastName, name, trainerDni, assignedClients } = req.body;
-        const sameTrainer = yield trainer_schema_1.TrainerSchema.findAll({ where: { trainerDni } });
-        if (sameTrainer && sameTrainer.length > 0) {
-            return (0, ErrorHandler_1.ErrorHandler)({ statusCode: 409, message: "Ya existe un entrenador con ese DNI" }, res);
-        }
-        const totalTrainer = yield trainer_schema_1.TrainerSchema.findAll();
-        const trainer = {
-            _id: totalTrainer.length + 1,
-            assignedClients,
-            trainerDni,
-            lastName,
-            area,
-            name,
-            age,
-        };
-        const data = yield trainer_schema_1.TrainerSchema.create(trainer);
-        console.log("---> data:", data);
-        if (!data) {
-            return (0, ErrorHandler_1.ErrorHandler)({
-                statusCode: 400,
-                message: "Hubo un problema para crear el registro.",
-            }, res);
-        }
-        const dataResponse = {
-            status: "success",
-            message: "El entrenador ha sido creado satisfactoriamente!",
-            data: data,
-        };
-        // Process Complete to create a new trainer.
-        res.status(201).json(dataResponse);
-    }
-    catch (err) {
-        console.log(err);
-        (0, ErrorHandler_1.ErrorHandler)({
-            statusCode: 400,
-            message: "la solicitud no ha podido ser gestionada adecuadamente.",
-        }, res);
-    }
-});
-exports.createTrainer = createTrainer;
 //# sourceMappingURL=trainer.controller.js.map

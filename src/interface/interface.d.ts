@@ -91,6 +91,17 @@ interface UserCreateBody {
   updatedAt: Date; */
 }
 
+interface AdminBody {
+  _id: number; // This is not the client Id, it's just for the DB requeriments.
+  adminDni: string;
+  name: string;
+  lastName: string;
+  email: string;
+  password: string;
+  hasPermissions: boolean;
+  isDeleted: boolean;
+}
+
 interface RequestQuery {
   limit?: number;
   p;
@@ -130,5 +141,6 @@ export type {
   InvoiceBody,
   TrainerBody,
   AmountBody,
+  AdminBody,
   UserBody,
 };

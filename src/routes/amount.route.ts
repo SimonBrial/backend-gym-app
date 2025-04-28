@@ -2,6 +2,8 @@ import { Router } from "express";
 import {
   getAmountName,
   updateAmount,
+  createAmount,
+  deleteAmount,
   getAmounts,
 } from "../controller/amount.controller";
 
@@ -14,9 +16,12 @@ amountRouter.get("/amounts", getAmounts);
 amountRouter.get("/amount/:name", getAmountName);
 
 // UPDATE amount by Id
-amountRouter.put("/trainer/u/:name", updateAmount);
+amountRouter.put("/amount/u/:name", updateAmount);
 
 // CREATE amount
-// amountRouter.post("/amount/create", createAmount);
+amountRouter.post("/amount/create", createAmount);
+
+// DELETE amount
+amountRouter.delete("/amount/d/:name", deleteAmount);
 
 export default amountRouter;

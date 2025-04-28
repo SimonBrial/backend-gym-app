@@ -3,7 +3,7 @@ import sequelize from "../db";
 
 const dt = new Date();
 
-export const UserSchema = sequelize.define(
+export const UserModel = sequelize.define(
   "user",
   {
     _id: {
@@ -82,5 +82,5 @@ export const UserSchema = sequelize.define(
   { timestamps: true },
 );
 
-// UserSchema.belongsTo(TrainerSchema, { foreignKey: "trainer_id" });
-// UserSchema.hasMany(InvoiceSchema, { foreignKey: "user_id" });
+// UserModel.belongsTo(TrainerModel, { foreignKey: "trainer_id" });
+// UserModel.hasMany(InvoiceModel, { foreignKey: "user_id" });

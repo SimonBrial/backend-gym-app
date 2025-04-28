@@ -1,7 +1,7 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../db";
 
-export const TrainerSchema = sequelize.define(
+export const TrainerModel = sequelize.define(
   "trainer",
   {
     _id: {

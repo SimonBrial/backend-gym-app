@@ -3,9 +3,11 @@ import "dotenv/config";
 import { connection } from "./db/connection";
 import express, { Response, Request, NextFunction } from "express";
 // import cors from "cors";
-import userRouter from "./routes/user.route";
 import trainerRouter from "./routes/trainer.route";
 import invoiceRouter from "./routes/invoice.route";
+import amountRouter from "./routes/amount.route";
+import adminRouter from "./routes/admin.route";
+import userRouter from "./routes/user.route";
 
 const app = express();
 
@@ -74,6 +76,10 @@ app.use("/v1", userRouter);
 app.use("/v1", trainerRouter);
 // Invoice Route
 app.use("/v1", invoiceRouter);
+// Amount Route
+app.use("/v1", amountRouter);
+// Admin Route
+app.use("/v1", adminRouter);
 
 // Server Connection
 app.listen(config.PORT, () =>
