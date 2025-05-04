@@ -17,7 +17,7 @@ interface UserBody {
   registrationDate: Date;
   lastPayment: Date;
   daysOfDebt: number;
-  trainerId?: string;
+  trainerId?: number;
   trainerDni?: string;
   trainerName?: string;
   lastUpdate: Date;
@@ -35,7 +35,7 @@ interface InvoiceBody {
   // trainer_id?: number;
   trainerDni?: string;
   trainerName?: string;
-  trainerLastName?: string;
+  // trainerLastName?: string;
   firstDate: Date;
   lastDate: Date;
   amount: number;
@@ -56,7 +56,7 @@ interface UserBodyCreating {
   plan: trainerPlan;
   age: number;
   trainerDni?: string;
-  trainerId?: string;
+  trainerId?: number;
 }
 
 interface TrainerBody {

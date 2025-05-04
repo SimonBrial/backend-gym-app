@@ -8,17 +8,24 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getInvoices = exports.deleteInvoice = exports.updateInvoice = exports.createInvoice = exports.getInvoiceById = void 0;
 const invoice_model_1 = require("../models/invoice.model");
 const ErrorHandler_1 = require("../helpers/ErrorHandler");
 const invoiceDaysCalc_1 = require("../helpers/invoiceDaysCalc");
 const user_model_1 = require("../models/user.model");
+const fillWithZeros_1 = require("../helpers/fillWithZeros");
+const db_1 = __importDefault(require("../db"));
+const amount_model_1 = require("../models/amount.model");
 // READ all users
 const getInvoices = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const transaction = yield db_1.default.transaction();
     try {
         // Search in the DDBB
-        const invoices = yield invoice_model_1.InvoiceModel.findAll();
+        const invoices = yield invoice_model_1.InvoiceModel.findAll({ transaction });
         // If there are not any invoices found
         if (!invoices || invoices.length === 0) {
             return (0, ErrorHandler_1.ErrorHandler)({
@@ -31,6 +38,7 @@ const getInvoices = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
             message: "Facturas encontradas",
             data: invoices,
         };
+        yield transaction.commit();
         // invoices found
         res.status(200).json(dataResponse);
     }
@@ -44,6 +52,7 @@ const getInvoices = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
 exports.getInvoices = getInvoices;
 // READ user By Id
 const getInvoiceById = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const transaction = yield db_1.default.transaction();
     try {
         const { _id } = req.params;
         const invoiceId = parseInt(_id);
@@ -59,6 +68,7 @@ const getInvoiceById = (req, res) => __awaiter(void 0, void 0, void 0, function*
             where: {
                 _id: invoiceId,
             },
+            transaction,
         });
         // if invoice not found
         if (!invoiceFound) {
@@ -70,6 +80,7 @@ const getInvoiceById = (req, res) => __awaiter(void 0, void 0, void 0, function*
             message: "Factura encontrada",
             data: invoiceFound,
         };
+        yield transaction.commit();
         res.status(200).json(dataResponse);
     }
     catch (error) {
@@ -82,20 +93,24 @@ const getInvoiceById = (req, res) => __awaiter(void 0, void 0, void 0, function*
 exports.getInvoiceById = getInvoiceById;
 // CREATE user
 const createInvoice = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const transaction = yield db_1.default.transaction();
     try {
         // TODO: Verify if the req.body don't empty.
         // TODO: Verify if the invoice hasn't been created yet.
-        const invoiceToCreate = req.body;
-        if (!invoiceToCreate) {
+        if (!req.body) {
             return (0, ErrorHandler_1.ErrorHandler)({ statusCode: 400, message: "El cuerpo de la solicitud está vacío" }, res);
         }
-        const { userLastName, trainerDni, invoiceId, userName, userDni, amount, plan, } = req.body;
+        const { userLastName, trainerDni, userName, userDni, plan } = req.body;
         // Is there an user with the userDni string?
         const userExisting = yield user_model_1.UserModel.findAll({
             where: { userDni },
+            transaction,
         });
-        console.log("userExisting --> ", userExisting.map((user) => user.toJSON()));
-        console.log("plan --> ", plan);
+        /* console.log(
+          "userExisting --> ",
+          userExisting.map((u) => u.toJSON()),
+        );
+     */
         // if there isn't an user with that dni string
         if (!userExisting) {
             return (0, ErrorHandler_1.ErrorHandler)({
@@ -123,7 +138,9 @@ const createInvoice = (req, res) => __awaiter(void 0, void 0, void 0, function* 
             res,
           );
         } */
-        const totalInvoices = yield invoice_model_1.InvoiceModel.findAll();
+        const totalInvoices = yield invoice_model_1.InvoiceModel.count({ transaction });
+        // console.log("allInvoices --> ", totalInvoices);
+        // const totalInvoices = allInvoices.length + 1;
         const invoicesDays = (0, invoiceDaysCalc_1.invoiceDaysCalculator)(plan);
         if (typeof invoicesDays === "string") {
             return (0, ErrorHandler_1.ErrorHandler)({
@@ -132,23 +149,35 @@ const createInvoice = (req, res) => __awaiter(void 0, void 0, void 0, function* 
             }, res);
         }
         const { firstDay, lastDay } = invoicesDays;
+        console.log("plan --> ", plan);
         // last_date && first_date = new
+        const planSelected = yield amount_model_1.AmountModel.findOne({
+            where: { name: plan },
+            transaction,
+        });
+        // console.log("planSelected --> ", planSelected.toJSON());
+        if (!planSelected) {
+            return (0, ErrorHandler_1.ErrorHandler)({
+                statusCode: 400,
+                message: "No existe el plan seleccionado, por favor indicar otro.",
+            }, res);
+        }
+        const test = planSelected.toJSON();
+        console.log("test --> ", test);
         const newInvoice /* : UserBody */ = {
-            _id: totalInvoices.length + 1,
             userLastName,
             trainerDni,
-            invoiceId: crypto.randomUUID(),
+            invoiceId: (0, fillWithZeros_1.fillWithZeros)(totalInvoices + 1, 5),
             firstDate: firstDay,
             userName,
             lastDate: lastDay,
             userDni,
-            amount,
             plan,
-            // createdAt: new Date(),
-            // updatedAt: new Date(),
         };
-        const data = yield invoice_model_1.InvoiceModel.create(newInvoice);
-        console.log("---> data:", data);
+        // console.log("newInvoice --> ", newInvoice);
+        const data = yield invoice_model_1.InvoiceModel.create(newInvoice, { transaction });
+        yield transaction.commit();
+        // console.log("---> data:", data);
         if (!data) {
             return (0, ErrorHandler_1.ErrorHandler)({
                 statusCode: 400,
@@ -164,9 +193,10 @@ const createInvoice = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         res.status(201).json(dataResponse);
     }
     catch (error) {
+        yield transaction.rollback();
         return (0, ErrorHandler_1.ErrorHandler)({
             statusCode: 400,
-            message: "la solicitud no ha podido ser gestionada adecuadamente.",
+            message: "La solicitud no ha podido ser gestionada adecuadamente.",
         }, res);
     }
 });
@@ -174,6 +204,40 @@ exports.createInvoice = createInvoice;
 // UPDATE user
 const updateInvoice = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
+        const { _id } = req.params;
+        if (!_id || !req.body) {
+            return (0, ErrorHandler_1.ErrorHandler)({ statusCode: 404, message: "Problemas con la solicitud." }, res);
+        }
+        const invoiceFound = yield invoice_model_1.InvoiceModel.findOne({
+            where: { _id: parseInt(_id) },
+        });
+        if (!invoiceFound) {
+            return (0, ErrorHandler_1.ErrorHandler)({ statusCode: 404, message: "Usuario no encontrado" }, res);
+        }
+        const { 
+        // trainerLastName,
+        userLastName, trainerName, trainerDni, invoiceId, firstDate, lastDate, userName, userDni, amount, plan, } = req.body;
+        const invoiceToUpdated = {
+            // trainerLastName,
+            userLastName,
+            trainerName,
+            trainerDni,
+            invoiceId,
+            firstDate,
+            lastDate,
+            userName,
+            userDni,
+            amount,
+            plan,
+        };
+        invoiceFound.set(invoiceToUpdated);
+        yield invoiceFound.save();
+        const dataResponse = {
+            status: "success",
+            message: "La factura ha sido actualizada satisfactoriamente!",
+            data: null,
+        };
+        res.status(200).json(dataResponse);
     }
     catch (error) {
         return (0, ErrorHandler_1.ErrorHandler)({

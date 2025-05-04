@@ -86,18 +86,18 @@ const createTrainer = (req, res) => __awaiter(void 0, void 0, void 0, function* 
     try {
         // TODO: Verify if the req.body don't empty.
         // TODO: Verify if the user hasn't been created yet. The DNI should be used for that validation.
-        const trainerToCreate = req.body;
-        if (!trainerToCreate) {
+        if (!req.body) {
             return (0, ErrorHandler_1.ErrorHandler)({ statusCode: 400, message: "El cuerpo de la solicitud está vacío" }, res);
         }
-        const { age, area, lastName, name, trainerDni, assignedClients } = trainerToCreate;
-        const sameTrainer = yield trainer_model_1.TrainerModel.findAll({ where: { trainerDni } });
+        const { age, area, lastName, name, trainerDni, assignedClients } = req.body;
+        const allTrainer = (yield trainer_model_1.TrainerModel.findAll()).map((trainer) => trainer.toJSON());
+        const totalTrainer = allTrainer.length;
+        const sameTrainer = allTrainer.filter((trainer) => trainer.trainerDni === trainerDni);
         if (sameTrainer && sameTrainer.length > 0) {
             return (0, ErrorHandler_1.ErrorHandler)({ statusCode: 409, message: "Ya existe un entrenador con ese DNI" }, res);
         }
-        const totalTrainer = yield trainer_model_1.TrainerModel.findAll();
         const trainer = {
-            _id: totalTrainer.length + 1,
+            _id: totalTrainer + 1,
             assignedClients,
             trainerDni,
             lastName,
@@ -140,7 +140,9 @@ const updateTrainer = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         }
         const trainerId = parseInt(_id);
         // TODO: Search trainer by ID
-        const trainerFound = yield trainer_model_1.TrainerModel.findOne({ where: { _id: trainerId } });
+        const trainerFound = yield trainer_model_1.TrainerModel.findOne({
+            where: { _id: trainerId },
+        });
         // TODO: Confirm that the trainer exist, if do not exist, then send message.
         if (!trainerFound) {
             return (0, ErrorHandler_1.ErrorHandler)({ statusCode: 404, message: "Trainer no encontrado" }, res);

@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { UserModel } from "../models/user.model";
 import { ErrorHandler } from "../helpers/ErrorHandler";
 import {
+  AmountBody,
   CustomRequest,
   CustomResponse,
   InvoiceBody,
@@ -9,6 +10,9 @@ import {
 } from "../interface/interface";
 import { invoiceDaysCalculator } from "../helpers/invoiceDaysCalc";
 import { InvoiceModel } from "../models/invoice.model";
+import sequelize from "../db";
+import { fillWithZeros } from "../helpers/fillWithZeros";
+import { AmountModel } from "../models/amount.model";
 
 // READ all users
 const getUsers = async (req: Request, res: Response): Promise<void> => {
@@ -31,11 +35,12 @@ const getUsers = async (req: Request, res: Response): Promise<void> => {
       );
     }
 
-    // If user not null
-    // Searching invoices
+    // If user not null Searching invoices
     const invoicesArray: InvoiceBody[] = (await InvoiceModel.findAll()).map(
       (inv) => inv.toJSON(),
     );
+
+    console.log("invoicesArray: ", invoicesArray);
     const newData = users
       .map((user) => {
         const userInvoices = invoicesArray.filter(
@@ -60,7 +65,7 @@ const getUsers = async (req: Request, res: Response): Promise<void> => {
     ErrorHandler(
       {
         statusCode: 400,
-        message: "la solicitud no ha podido ser gestionada adecuadamente.",
+        message: "La solicitud no ha podido ser gestionada adecuadamente.",
       },
       res,
     );
@@ -72,28 +77,39 @@ const getUserById = async (
   req: CustomRequest<UserBody>,
   res: Response,
 ): Promise<void> => {
+  const transaction = await sequelize.transaction();
   try {
     const { _id } = req.params;
     // console.log("Received ID:", _id);
-    const userId = parseInt(_id);
     // If there is problem with the request
-    if (!userId || isNaN(userId)) {
+    if (!_id) {
+      await transaction.rollback();
       return ErrorHandler(
-        { statusCode: 400, message: "Problema con la solicitud" },
+        {
+          statusCode: 400,
+          message: "Problema con la solicitud",
+        },
         res,
       );
     }
+    const userId = parseInt(_id);
     // If there isn't any problem with the request
     const userFound = (
       await UserModel.findOne({
-        where: { _id: userId },
+        where: {
+          _id: userId,
+        },
+        transaction,
       })
     )?.toJSON();
 
     // if User not found
     if (!userFound) {
       return ErrorHandler(
-        { statusCode: 404, message: "Usuario no encontrado" },
+        {
+          statusCode: 404,
+          message: "Usuario no encontrado",
+        },
         res,
       );
     }
@@ -101,10 +117,19 @@ const getUserById = async (
     // Searching invoices
     const invoicesArray: InvoiceBody[] = (
       await InvoiceModel.findAll({
-        where: { _id: userId },
+        where: {
+          _id: userId,
+        },
+        transaction,
       })
     ).map((inv) => inv.toJSON());
-    const newData = { ...userFound, invoicesArray: invoicesArray };
+
+    await transaction.commit();
+
+    const newData = {
+      ...userFound,
+      invoicesArray: invoicesArray,
+    };
 
     // console.log("newData: ", newData);
     /* users
@@ -128,8 +153,12 @@ const getUserById = async (
 
     res.status(200).json(dataResponse);
   } catch (err) {
+    await transaction.rollback();
     return ErrorHandler(
-      { statusCode: 500, message: "Ha ocurrido un error en el servidor" },
+      {
+        statusCode: 500,
+        message: "Ha ocurrido un error en el servidor",
+      },
       res,
     );
   }
@@ -140,13 +169,14 @@ const createUser = async (
   req: CustomRequest<UserBody>,
   res: Response,
 ): Promise<void> => {
+  const transaction = await sequelize.transaction();
   try {
     // TODO: Verify if the req.body don't empty.
-    // TODO: Verify if the user hasn't been created yet. The DNI should be used for that validation.
+    // TODO: Verify if the user hasn't been created yet. The DNI should be used for
+    // that validation.
 
-    const userToCreate = req.body;
-
-    if (!userToCreate) {
+    if (!req.body) {
+      await transaction.rollback();
       return ErrorHandler(
         { statusCode: 400, message: "El cuerpo de la solicitud está vacío" },
         res,
@@ -164,16 +194,18 @@ const createUser = async (
       age,
     } = req.body;
 
-    const allUsers: UserBody[] = (await UserModel.findAll()).map((user) =>
-      user.toJSON(),
-    );
+    const sameUsers = await UserModel.findOne({
+      where: { userDni },
+      transaction,
+    });
 
-    const totalUsers = allUsers.length;
+    /* const totalUsers = allUsers.length;
     const sameUsers: UserBody[] = allUsers.filter(
       (user: UserBody) => user.userDni === userDni,
-    );
+    ); */
 
-    if (sameUsers && sameUsers.length > 0) {
+    if (sameUsers) {
+      await transaction.rollback();
       return ErrorHandler(
         { statusCode: 409, message: "Ya existe un usuario con ese DNI" },
         res,
@@ -181,7 +213,7 @@ const createUser = async (
     }
 
     const user = {
-      _id: totalUsers + 1,
+      // _id: totalUsers + 1,
       userDni,
       name,
       lastName,
@@ -200,10 +232,11 @@ const createUser = async (
       // updatedAt: new Date(),
     };
 
-    const data = await UserModel.create(user);
-    console.log("---> data:", data);
+    const userToCreated = await UserModel.create(user, { transaction });
+    console.log("---> userToCreated:", userToCreated);
 
-    if (!data) {
+    if (!userToCreated) {
+      await transaction.rollback();
       return ErrorHandler(
         {
           statusCode: 400,
@@ -214,11 +247,10 @@ const createUser = async (
     }
     // On these place i will add the code to create the first invoice for the user.
 
-    const totalInvoices = (await InvoiceModel.findAll()).map((invoice) =>
-      invoice.toJSON(),
-    );
+    const totalInvoices = await InvoiceModel.count({ transaction });
     const invoiceDays = invoiceDaysCalculator(plan);
     if (typeof invoiceDays === "string") {
+      await transaction.rollback();
       return ErrorHandler(
         {
           statusCode: 400,
@@ -228,21 +260,48 @@ const createUser = async (
       );
     }
 
+    const planSelected: AmountBody | undefined = (
+      await AmountModel.findOne({
+        where: { name: plan },
+        transaction,
+      })
+    )?.toJSON();
+
+    console.log("planSelected --> ", planSelected);
+
+    if (planSelected === undefined) {
+      await transaction.rollback();
+      return ErrorHandler(
+        {
+          statusCode: 400,
+          message: "No existe el plan seleccionado, por favor indicar otro.",
+        },
+        res,
+      );
+    }
+
+    console.log("planSelected --> ", planSelected);
+
     const { firstDay, lastDay } = invoiceDays;
     const firstInvoice = {
-      _id: totalInvoices.length + 1, // Genera un ID único para la factura.
+      // _id: totalInvoices + 1, // Genera un ID único para la factura.
       userLastName: lastName,
       trainerDni,
-      invoiceId: crypto.randomUUID(),
+      invoiceId: fillWithZeros(totalInvoices + 1, 5),
       firstDate: firstDay,
       userName: name,
       lastDate: lastDay,
       userDni,
-      amount: 100, // TODO --> Ajusta el monto según el plan.
-      plan,
+      amount: planSelected.cost, // TODO --> Ajusta el monto según el plan.
+      plan: planSelected.name,
     };
-    const createdInvoice = await InvoiceModel.create(firstInvoice);
+
+    const createdInvoice = await InvoiceModel.create(firstInvoice, {
+      transaction,
+    });
+
     if (!createdInvoice) {
+      await transaction.rollback();
       return ErrorHandler(
         {
           statusCode: 400,
@@ -253,25 +312,29 @@ const createUser = async (
     }
 
     // Asegúrate de que invoicesArray sea un array
-    if (!Array.isArray(data.dataValues.invoicesArray)) {
-      data.dataValues.invoicesArray = [];
+    if (!Array.isArray(userToCreated.dataValues.invoicesArray)) {
+      userToCreated.dataValues.invoicesArray = [];
     }
     // Agrega el ID de la factura y filtra valores vacíos
-    data.dataValues.invoicesArray = [
-      ...data.dataValues.invoicesArray,
-      createdInvoice.dataValues.invoiceId,
-    ].filter((inv) => inv !== "");
+    userToCreated.dataValues.invoicesArray = [
+      ...userToCreated.dataValues.invoicesArray.filter(
+        (inv: any) => typeof inv === "object",
+      ),
+      createdInvoice.toJSON(),
+    ];
 
-    await data.update(
-      { invoicesArray: data.dataValues.invoicesArray },
-      { where: { userDni } },
+    // userToCreated.dataValues.invoicesArray.push(invoiceData);
+
+    await userToCreated.update(
+      { invoicesArray: userToCreated.dataValues.invoicesArray },
+      { where: { userDni }, transaction },
     );
 
-    await data.save();
+    await transaction.commit();
 
     const dataUpdated = {
-      ...data.toJSON(),
-      invoicesArray: createdInvoice.toJSON(),
+      ...userToCreated.toJSON(),
+      invoicesArray: [...userToCreated.toJSON().invoicesArray],
     };
 
     const dataResponse: CustomResponse = {
@@ -285,11 +348,86 @@ const createUser = async (
 
     // const user = res.json({ res: "Creating user" });
   } catch (err) {
+    await transaction.rollback();
     ErrorHandler(
-      { statusCode: 500, message: "Ha ocurrido un error en el servidor" },
+      {
+        statusCode: 500,
+        message: "Ha ocurrido un error en el servidor",
+      },
       res,
     );
     console.log("Error:", err);
+  }
+};
+
+// UPDATE user by Id
+const updateUser = async (
+  req: CustomRequest<UserBody>,
+  res: Response,
+): Promise<void> => {
+  const transaction = await sequelize.transaction();
+  try {
+    // TODO: Read ID from request and body.
+    const { _id } = req.params;
+
+    if (!_id || !req.body) {
+      await transaction.rollback();
+      return ErrorHandler(
+        {
+          statusCode: 404,
+          message: "Problemas con la solicitud.",
+        },
+        res,
+      );
+    }
+
+    const userId = parseInt(_id);
+
+    // TODO: Search user by ID
+    const userFound = await UserModel.findOne({
+      where: {
+        _id: userId,
+      },
+      transaction,
+    });
+
+    console.log("userFound --> ", userFound);
+
+    // TODO: Confirm that the user exist, if do not exist, then send message.
+    if (!userFound) {
+      return ErrorHandler(
+        {
+          statusCode: 404,
+          message: "Usuario no encontrado",
+        },
+        res,
+      );
+    }
+
+    // TODO: If user existing then, update the user userToCreated.
+    await userFound.update(req.body, { transaction });
+    // await userFound.save(); // Asegurar que la actualización ocurra dentro de la transacción
+    await transaction.commit(); // Confirmar los cambios en la base de datos
+
+    //await userFound.save();
+
+    // TODO: if data has been updated, then the API will send a success message.
+    const dataResponse: CustomResponse = {
+      status: "success",
+      message: "el usuario ha sido actualizado satisfactoriamente!",
+      data: null,
+    };
+
+    res.status(200).json(dataResponse);
+  } catch (err) {
+    await transaction.rollback();
+    return ErrorHandler(
+      {
+        statusCode: 500,
+        message: "Ha ocurrido un error en el servidor",
+      },
+      res,
+    );
   }
 };
 
@@ -298,14 +436,19 @@ const deleteUser = async (
   req: CustomRequest<UserBody>,
   res: Response,
 ): Promise<void> => {
+  const transaction = await sequelize.transaction();
   try {
     // Receive the Id of the user to delete
     const { _id } = req.params; // ID of user
 
     // if id don't exist
-    if (!_id || !parseInt(_id)) {
+    if (!_id) {
+      await transaction.rollback();
       return ErrorHandler(
-        { statusCode: 404, message: "No fue suministrada un id del usuario" },
+        {
+          statusCode: 404,
+          message: "No fue suministrada un id del usuario",
+        },
         res,
       );
     }
@@ -314,17 +457,24 @@ const deleteUser = async (
     const userId = parseInt(_id);
 
     const userToDelete = await UserModel.findOne({
-      where: { _id: userId },
+      where: {
+        _id: userId,
+      },
+      transaction,
     });
 
     if (!userToDelete) {
       return ErrorHandler(
-        { statusCode: 404, message: "Usuario no encontrado" },
+        {
+          statusCode: 404,
+          message: "Usuario no encontrado",
+        },
         res,
       );
     }
 
-    await userToDelete.destroy();
+    await userToDelete.destroy({ transaction });
+    await transaction.commit();
 
     const dataResponse: CustomResponse = {
       status: "success",
@@ -334,100 +484,18 @@ const deleteUser = async (
 
     res.status(200).json(dataResponse);
   } catch (err) {
+    await transaction.rollback();
     return ErrorHandler(
-      { statusCode: 500, message: "Ha ocurrido un error en el servidor" },
-      res,
-    );
-  }
-};
-// UPDATE user by Id
-const updateUser = async (
-  req: CustomRequest<UserBody>,
-  res: Response,
-): Promise<void> => {
-  try {
-    // TODO: Read ID from request and body.
-    const { _id } = req.params;
-
-    if (!_id || !req.body) {
-      return ErrorHandler(
-        { statusCode: 404, message: "Problemas con la solicitud." },
-        res,
-      );
-    }
-
-    const userId = parseInt(_id);
-    // TODO: Search user by ID
-    const userFound = await UserModel.findOne({ where: { _id: userId } });
-
-    console.log("userFound: ", userFound);
-
-    // TODO: Confirm that the user exist, if do not exist, then send message.
-    if (!userFound) {
-      return ErrorHandler(
-        { statusCode: 404, message: "Usuario no encontrado" },
-        res,
-      );
-    }
-
-    // TODO: If user existing then, update the user data.
-    const {
-      registrationDate,
-      trainerName,
-      lastPayment,
-      daysOfDebt,
-      trainerDni,
-      lastUpdate,
-      invoicesArray,
-      trainerId,
-      lastName,
-      userDni,
-      weight,
-      name,
-      plan,
-      age,
-    } = req.body;
-    console.log("req.body: ", req.body);
-    // user.registrationDate  user.lastPayment  user.daysOfDebt  user.last_update
-    const userUpdated /* : UserBody */ = {
-      _id: _id,
-      registrationDate,
-      trainerName,
-      lastPayment,
-      daysOfDebt,
-      trainerDni,
-      lastUpdate,
-      invoicesArray,
-      trainerId,
-      lastName,
-      userDni,
-      weight,
-      name,
-      plan,
-      age,
-    };
-    // TODO: if data has been updated, then the API will send a success message.
-
-    userFound.set(userUpdated);
-
-    await userFound.save();
-
-    const dataResponse: CustomResponse = {
-      status: "success",
-      message: "el usuario ha sido actualizado satisfactoriamente!",
-      data: null,
-    };
-
-    res.status(200).json(dataResponse);
-  } catch (err) {
-    return ErrorHandler(
-      { statusCode: 500, message: "Ha ocurrido un error en el servidor" },
+      {
+        statusCode: 500,
+        message: "Ha ocurrido un error en el servidor",
+      },
       res,
     );
   }
 };
 
-// Get a quantity of users by a number (Pagination)
+// Get a quantity of users by a Number (Pagination)
 const pagination = async (req: Request, res: Response): Promise<void> => {
   try {
     res.json({ res: "Pagination", qty: 20 });

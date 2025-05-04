@@ -1,18 +1,16 @@
 import { z } from "zod";
-import { emailSchema, passwordSchema } from "./helper.schema";
+import { emailSchema, passwordSchema, dniSchema } from "./helper.schema";
 
 // These is just to validate the req.body that will be send (Response) or has been received (Request)
 
 export const AdminSchema = z.object({
-  adminDni: z
-    .string({ message: "El DNI es requerido" })
-    .max(15, { message: "DNI no cumple con la cantidad de caracteres" }),
+  adminDni: dniSchema,
   name: z
     .string({ message: "El nombre es requerido!" })
-    .max(30, { message: "El nombre supera la cantidad de caracteres" }),
+    .max(30, { message: "El nombre supera la cantidad maxima de caracteres" }),
   lastName: z
     .string({ message: "El apellido es requerido!" })
-    .max(30, { message: "El apellido supera la cantidad de caracteres" }),
+    .max(30, { message: "El apellido supera la cantidad maxima de caracteres" }),
   email: emailSchema,
   password: passwordSchema,
   hasPermissions: z
@@ -24,7 +22,7 @@ export const AdminSchema = z.object({
   isDeleted: z.boolean().default(false),
 });
 /* export const AdminOutputSchema = z.object({
-  _id: z.number().optional(),
+  _id: z.parseInt).optional(),
   adminDni: z.string().max(15),
   name: z.string().max(30),
   lastName: z.string().max(30),

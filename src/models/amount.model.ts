@@ -8,6 +8,7 @@ export const AmountModel = sequelize.define(
       type: DataTypes.INTEGER,
       allowNull: false,
       primaryKey: true,
+      autoIncrement: true,
     },
     cost: {
       type: DataTypes.INTEGER,
@@ -16,6 +17,7 @@ export const AmountModel = sequelize.define(
     name: {
       type: DataTypes.STRING(20),
       allowNull: false,
+      unique: true,
     },
   },
   { timestamps: true },

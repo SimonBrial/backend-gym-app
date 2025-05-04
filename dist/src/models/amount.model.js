@@ -11,14 +11,16 @@ exports.AmountModel = db_1.default.define("amount", {
         type: sequelize_1.DataTypes.INTEGER,
         allowNull: false,
         primaryKey: true,
+        autoIncrement: true,
     },
     cost: {
         type: sequelize_1.DataTypes.INTEGER,
         allowNull: false,
     },
     name: {
-        type: sequelize_1.DataTypes.STRING(15),
+        type: sequelize_1.DataTypes.STRING(20),
         allowNull: false,
+        unique: true,
     },
 }, { timestamps: true });
 //# sourceMappingURL=amount.model.js.map

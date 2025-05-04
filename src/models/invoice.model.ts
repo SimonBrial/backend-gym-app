@@ -6,12 +6,17 @@ export const InvoiceModel = sequelize.define(
   {
     _id: {
       type: DataTypes.INTEGER,
+      autoIncrement: true,
       allowNull: false,
       primaryKey: true,
     },
     invoiceId: {
-      type: DataTypes.STRING(50),
+      type: DataTypes.STRING(6),
       allowNull: false,
+      unique: true, // Garantiza que sea único
+      validate: {
+        notEmpty: true, // No permite valores vacíos
+      },
     },
     userDni: {
       type: DataTypes.STRING(15),

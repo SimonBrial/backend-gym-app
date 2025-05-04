@@ -9,12 +9,17 @@ const db_1 = __importDefault(require("../db"));
 exports.InvoiceModel = db_1.default.define("invoice", {
     _id: {
         type: sequelize_1.DataTypes.INTEGER,
+        autoIncrement: true,
         allowNull: false,
         primaryKey: true,
     },
     invoiceId: {
-        type: sequelize_1.DataTypes.STRING(50),
+        type: sequelize_1.DataTypes.STRING(6),
         allowNull: false,
+        unique: true, // Garantiza que sea único
+        validate: {
+            notEmpty: true, // No permite valores vacíos
+        },
     },
     userDni: {
         type: sequelize_1.DataTypes.STRING(15),

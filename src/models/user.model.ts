@@ -52,10 +52,10 @@ export const UserModel = sequelize.define(
     },
     trainerId: {
       // Id  from the DDBB
-      type: DataTypes.STRING(6),
+      type: DataTypes.INTEGER,
       allowNull: true,
       // unique: true,
-      defaultValue: "000000",
+      defaultValue: 0,
     },
     trainerDni: {
       type: DataTypes.STRING(10), // The length of the DNI should be define

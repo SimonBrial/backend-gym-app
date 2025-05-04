@@ -25,7 +25,7 @@ userRouter.put("/user/u/:_id", updateUser);
 // DELETE user by Id
 userRouter.delete("/user/d/:_id", deleteUser);
 
-// Get a quantity of users by a number (Pagination)
+// Get a quantity of users by a Number (Pagination)
 // userRouter.get("/users/:qty", pagination);
 
 export default userRouter;

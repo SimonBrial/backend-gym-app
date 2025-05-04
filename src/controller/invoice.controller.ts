@@ -6,15 +6,20 @@ import {
   CustomResponse,
   CustomRequest,
   InvoiceBody,
+  AmountBody,
 } from "../interface/interface";
 import { invoiceDaysCalculator } from "../helpers/invoiceDaysCalc";
 import { UserModel } from "../models/user.model";
+import { fillWithZeros } from "../helpers/fillWithZeros";
+import sequelize from "../db";
+import { AmountModel } from "../models/amount.model";
 
 // READ all users
 const getInvoices = async (req: Request, res: Response): Promise<void> => {
+  const transaction = await sequelize.transaction();
   try {
     // Search in the DDBB
-    const invoices = await InvoiceModel.findAll();
+    const invoices = await InvoiceModel.findAll({ transaction });
 
     // If there are not any invoices found
     if (!invoices || invoices.length === 0) {
@@ -33,6 +38,8 @@ const getInvoices = async (req: Request, res: Response): Promise<void> => {
       data: invoices,
     };
 
+    await transaction.commit();
+
     // invoices found
     res.status(200).json(dataResponse);
   } catch (err) {
@@ -50,6 +57,7 @@ const getInvoiceById = async (
   req: CustomRequest<InvoiceBody>,
   res: Response,
 ): Promise<void> => {
+  const transaction = await sequelize.transaction();
   try {
     const { _id } = req.params;
 
@@ -71,6 +79,7 @@ const getInvoiceById = async (
       where: {
         _id: invoiceId,
       },
+      transaction,
     });
 
     // if invoice not found
@@ -88,6 +97,8 @@ const getInvoiceById = async (
       data: invoiceFound,
     };
 
+    await transaction.commit();
+
     res.status(200).json(dataResponse);
   } catch (error) {
     return ErrorHandler(
@@ -104,40 +115,31 @@ const createInvoice = async (
   req: CustomRequest<InvoiceBody>,
   res: Response,
 ): Promise<void> => {
+  const transaction = await sequelize.transaction();
   try {
     // TODO: Verify if the req.body don't empty.
     // TODO: Verify if the invoice hasn't been created yet.
 
-    const invoiceToCreate = req.body;
-
-    if (!invoiceToCreate) {
+    if (!req.body) {
       return ErrorHandler(
         { statusCode: 400, message: "El cuerpo de la solicitud está vacío" },
         res,
       );
     }
 
-    const {
-      userLastName,
-      trainerDni,
-      invoiceId,
-      userName,
-      userDni,
-      amount,
-      plan,
-    } = req.body;
+    const { userLastName, trainerDni, userName, userDni, plan } = req.body;
 
     // Is there an user with the userDni string?
     const userExisting = await UserModel.findAll({
       where: { userDni },
+      transaction,
     });
 
-    console.log(
+    /* console.log(
       "userExisting --> ",
-      userExisting.map((user) => user.toJSON()),
+      userExisting.map((u) => u.toJSON()),
     );
-    console.log("plan --> ", plan)
-
+ */
     // if there isn't an user with that dni string
     if (!userExisting) {
       return ErrorHandler(
@@ -175,7 +177,10 @@ const createInvoice = async (
       );
     } */
 
-    const totalInvoices = await InvoiceModel.findAll();
+    const totalInvoices = await InvoiceModel.count({ transaction });
+
+    // console.log("allInvoices --> ", totalInvoices);
+    // const totalInvoices = allInvoices.length + 1;
 
     const invoicesDays = invoiceDaysCalculator(plan);
     if (typeof invoicesDays === "string") {
@@ -191,25 +196,48 @@ const createInvoice = async (
 
     const { firstDay, lastDay } = invoicesDays as InvoiceDaysCalculator;
 
+    console.log("plan --> ", plan);
+
     // last_date && first_date = new
 
+    const planSelected = await AmountModel.findOne({
+      where: { name: plan },
+      transaction,
+    });
+
+    // console.log("planSelected --> ", planSelected.toJSON());
+
+    if (!planSelected) {
+      return ErrorHandler(
+        {
+          statusCode: 400,
+          message: "No existe el plan seleccionado, por favor indicar otro.",
+        },
+        res,
+      );
+    }
+
+    const test: AmountBody = planSelected.toJSON();
+    console.log("test --> ", test);
+
     const newInvoice /* : UserBody */ = {
-      _id: totalInvoices.length + 1,
       userLastName,
       trainerDni,
-      invoiceId: crypto.randomUUID(),
+      invoiceId: fillWithZeros(totalInvoices + 1, 5),
       firstDate: firstDay,
       userName,
       lastDate: lastDay,
       userDni,
-      amount,
       plan,
-      // createdAt: new Date(),
-      // updatedAt: new Date(),
     };
 
-    const data = await InvoiceModel.create(newInvoice);
-    console.log("---> data:", data);
+    // console.log("newInvoice --> ", newInvoice);
+
+    const data = await InvoiceModel.create(newInvoice, { transaction });
+
+    await transaction.commit();
+
+    // console.log("---> data:", data);
 
     if (!data) {
       return ErrorHandler(
@@ -230,10 +258,11 @@ const createInvoice = async (
     // Process Complete to create a new user.
     res.status(201).json(dataResponse);
   } catch (error) {
+    await transaction.rollback();
     return ErrorHandler(
       {
         statusCode: 400,
-        message: "la solicitud no ha podido ser gestionada adecuadamente.",
+        message: "La solicitud no ha podido ser gestionada adecuadamente.",
       },
       res,
     );
@@ -245,6 +274,65 @@ const updateInvoice = async (
   res: Response,
 ): Promise<void> => {
   try {
+    const { _id } = req.params;
+
+    if (!_id || !req.body) {
+      return ErrorHandler(
+        { statusCode: 404, message: "Problemas con la solicitud." },
+        res,
+      );
+    }
+
+    const invoiceFound = await InvoiceModel.findOne({
+      where: { _id: parseInt(_id) },
+    });
+
+    if (!invoiceFound) {
+      return ErrorHandler(
+        { statusCode: 404, message: "Usuario no encontrado" },
+        res,
+      );
+    }
+
+    const {
+      // trainerLastName,
+      userLastName,
+      trainerName,
+      trainerDni,
+      invoiceId,
+      firstDate,
+      lastDate,
+      userName,
+      userDni,
+      amount,
+      plan,
+    } = req.body as InvoiceBody;
+
+    const invoiceToUpdated = {
+      // trainerLastName,
+      userLastName,
+      trainerName,
+      trainerDni,
+      invoiceId,
+      firstDate,
+      lastDate,
+      userName,
+      userDni,
+      amount,
+      plan,
+    };
+
+    invoiceFound.set(invoiceToUpdated);
+
+    await invoiceFound.save();
+
+    const dataResponse: CustomResponse = {
+      status: "success",
+      message: "La factura ha sido actualizada satisfactoriamente!",
+      data: null,
+    };
+
+    res.status(200).json(dataResponse);
   } catch (error) {
     return ErrorHandler(
       {

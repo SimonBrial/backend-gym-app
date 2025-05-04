@@ -110,19 +110,22 @@ const createTrainer = async (
     // TODO: Verify if the req.body don't empty.
     // TODO: Verify if the user hasn't been created yet. The DNI should be used for that validation.
 
-    const trainerToCreate = req.body;
-
-    if (!trainerToCreate) {
+    if (!req.body) {
       return ErrorHandler(
         { statusCode: 400, message: "El cuerpo de la solicitud está vacío" },
         res,
       );
     }
 
-    const { age, area, lastName, name, trainerDni, assignedClients } =
-    trainerToCreate;
+    const { age, area, lastName, name, trainerDni, assignedClients } = req.body;
 
-    const sameTrainer = await TrainerModel.findAll({ where: { trainerDni } });
+    const allTrainer: TrainerBody[] = (await TrainerModel.findAll()).map(
+      (trainer) => trainer.toJSON(),
+    );
+    const totalTrainer = allTrainer.length;
+    const sameTrainer: TrainerBody[] = allTrainer.filter(
+      (trainer: TrainerBody) => trainer.trainerDni === trainerDni,
+    );
 
     if (sameTrainer && sameTrainer.length > 0) {
       return ErrorHandler(
@@ -131,10 +134,8 @@ const createTrainer = async (
       );
     }
 
-    const totalTrainer = await TrainerModel.findAll();
-
     const trainer = {
-      _id: totalTrainer.length + 1,
+      _id: totalTrainer + 1,
       assignedClients,
       trainerDni,
       lastName,
@@ -195,7 +196,9 @@ const updateTrainer = async (
 
     const trainerId = parseInt(_id);
     // TODO: Search trainer by ID
-    const trainerFound = await TrainerModel.findOne({ where: { _id: trainerId } });
+    const trainerFound = await TrainerModel.findOne({
+      where: { _id: trainerId },
+    });
 
     // TODO: Confirm that the trainer exist, if do not exist, then send message.
     if (!trainerFound) {
@@ -206,8 +209,7 @@ const updateTrainer = async (
     }
 
     // TODO: If trainer existing then, update the trainer data.
-    const { age, area, assignedClients, lastName, name, trainerDni } =
-      req.body;
+    const { age, area, assignedClients, lastName, name, trainerDni } = req.body;
     const userUpdated /* : TrainerBody */ = {
       _id: trainerId,
       assignedClients,

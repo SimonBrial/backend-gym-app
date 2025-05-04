@@ -6,6 +6,7 @@ import {
   CustomRequest,
   AmountBody,
 } from "../interface/interface";
+import sequelize from "../db";
 
 // READ amounts
 const getAmounts = async (req: Request, res: Response) => {
@@ -26,7 +27,7 @@ const getAmounts = async (req: Request, res: Response) => {
 
     const dataResponse: CustomResponse = {
       status: "success",
-      message: "Montos encontrados",
+      message: "Suscripciones encontradas",
       data: amounts,
     };
 
@@ -101,38 +102,36 @@ const createAmount = async (
   req: CustomRequest<AmountBody>,
   res: Response,
 ): Promise<void> => {
+  const transaction = await sequelize.transaction();
   try {
-    const amountBody = req.body;
-
-    if (!amountBody) {
+    if (!req.body) {
+      await transaction.rollback();
       return ErrorHandler(
         { statusCode: 400, message: "El cuerpo de la solicitud está vacío" },
         res,
       );
     }
 
-    const { _id, cost, name } = amountBody;
+    const { cost, name } = req.body;
 
-    const sameAmount = await AmountModel.findAll({ where: { name } });
+    const existingAmount = await AmountModel.findOne({
+      where: { name },
+      transaction,
+    });
 
-    if (sameAmount && sameAmount.length > 0) {
+    if (existingAmount) {
       return ErrorHandler(
         { statusCode: 409, message: "Ya existe un monto con ese nombre" },
         res,
       );
     }
 
-    const newAmount = {
-      _id,
-      name,
-      cost,
-    };
+    const data = await AmountModel.create({ name, cost }, { transaction });
 
-    const data = await AmountModel.create(newAmount);
-
-    console.log("---> data:", data);
+    // console.log("---> data:", data);
 
     if (!data) {
+      await transaction.rollback();
       return ErrorHandler(
         {
           statusCode: 400,
@@ -141,6 +140,8 @@ const createAmount = async (
         res,
       );
     }
+
+    await transaction.commit();
 
     const dataResponse: CustomResponse = {
       status: "success",
@@ -151,6 +152,7 @@ const createAmount = async (
     // Process Complete to create a new trainer.
     res.status(201).json(dataResponse);
   } catch (error) {
+    await transaction.rollback();
     return ErrorHandler(
       {
         statusCode: 400,
@@ -165,36 +167,42 @@ const updateAmount = async (
   req: CustomRequest<AmountBody>,
   res: Response,
 ): Promise<void> => {
+  const transaction = await sequelize.transaction();
   try {
     const { name } = req.params;
 
     if (!name || !req.body) {
+      await transaction.rollback();
       return ErrorHandler(
         { statusCode: 404, message: "Problemas con la solicitud." },
         res,
       );
     }
 
-    const amountFound = await AmountModel.findOne({ where: { name } });
+    const amountFound = await AmountModel.findOne({
+      where: { name },
+      transaction,
+    });
 
     if (!amountFound) {
+      await transaction.rollback();
       return ErrorHandler(
         { statusCode: 404, message: "Monto no encontrado" },
         res,
       );
     }
 
-    const { _id, cost } = req.body as AmountBody;
+    const { cost } = req.body as AmountBody;
 
     const amountUpdated = {
-      _id,
       cost,
       name,
     };
 
-    amountFound.set(amountUpdated);
+    await amountFound.update(amountUpdated, { transaction });
+    await transaction.commit();
 
-    await amountFound.save();
+    // await amountFound.save();
 
     const dataResponse: CustomResponse = {
       status: "success",
@@ -204,6 +212,7 @@ const updateAmount = async (
 
     res.status(200).json(dataResponse);
   } catch (error) {
+    await transaction.rollback();
     return ErrorHandler(
       {
         statusCode: 400,
@@ -219,10 +228,12 @@ const deleteAmount = async (
   req: CustomRequest<AmountBody>,
   res: Response,
 ): Promise<void> => {
+  const transaction = await sequelize.transaction();
   try {
     const { name } = req.params;
 
     if (!name) {
+      await transaction.rollback();
       ErrorHandler(
         {
           statusCode: 400,
@@ -234,10 +245,12 @@ const deleteAmount = async (
 
     const amountToDelete = await AmountModel.findOne({
       where: { name },
+      transaction,
     });
 
     // if trainer not found
     if (!amountToDelete) {
+      await transaction.rollback();
       return ErrorHandler(
         { statusCode: 404, message: "monto no encontrado" },
         res,
@@ -245,7 +258,8 @@ const deleteAmount = async (
     }
 
     // Trainer found
-    await amountToDelete.destroy();
+    await amountToDelete.destroy({ transaction });
+    await transaction.commit();
 
     const dataResponse: CustomResponse = {
       status: "success",
@@ -256,14 +270,15 @@ const deleteAmount = async (
     // Sending response
     res.status(200).json(dataResponse);
   } catch (err) {
-    console.log(err);
-    ErrorHandler(
+    await transaction.rollback();
+    return ErrorHandler(
       {
         statusCode: 400,
         message: "la solicitud no ha podido ser gestionada adecuadamente.",
       },
       res,
     );
+    console.log(err);
   }
 };
 

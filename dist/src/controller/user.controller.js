@@ -8,12 +8,18 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getUsers = exports.pagination = exports.createUser = exports.deleteUser = exports.updateUser = exports.getUserById = void 0;
 const user_model_1 = require("../models/user.model");
 const ErrorHandler_1 = require("../helpers/ErrorHandler");
 const invoiceDaysCalc_1 = require("../helpers/invoiceDaysCalc");
 const invoice_model_1 = require("../models/invoice.model");
+const db_1 = __importDefault(require("../db"));
+const fillWithZeros_1 = require("../helpers/fillWithZeros");
+const amount_model_1 = require("../models/amount.model");
 // READ all users
 const getUsers = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
@@ -28,9 +34,9 @@ const getUsers = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
                 message: "No se encontraron usuarios en la base de datos",
             }, res);
         }
-        // If user not null
-        // Searching invoices
+        // If user not null Searching invoices
         const invoicesArray = (yield invoice_model_1.InvoiceModel.findAll()).map((inv) => inv.toJSON());
+        console.log("invoicesArray: ", invoicesArray);
         const newData = users
             .map((user) => {
             const userInvoices = invoicesArray.filter((inv) => inv.userDni === user.userDni);
@@ -48,7 +54,7 @@ const getUsers = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     catch (err) {
         (0, ErrorHandler_1.ErrorHandler)({
             statusCode: 400,
-            message: "la solicitud no ha podido ser gestionada adecuadamente.",
+            message: "La solicitud no ha podido ser gestionada adecuadamente.",
         }, res);
     }
 });
@@ -56,26 +62,41 @@ exports.getUsers = getUsers;
 // READ user By Id
 const getUserById = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
+    const transaction = yield db_1.default.transaction();
     try {
         const { _id } = req.params;
         // console.log("Received ID:", _id);
-        const userId = parseInt(_id);
         // If there is problem with the request
-        if (!userId || isNaN(userId)) {
-            return (0, ErrorHandler_1.ErrorHandler)({ statusCode: 400, message: "Problema con la solicitud" }, res);
+        if (!_id) {
+            yield transaction.rollback();
+            return (0, ErrorHandler_1.ErrorHandler)({
+                statusCode: 400,
+                message: "Problema con la solicitud",
+            }, res);
         }
+        const userId = parseInt(_id);
         // If there isn't any problem with the request
         const userFound = (_a = (yield user_model_1.UserModel.findOne({
-            where: { _id: userId },
+            where: {
+                _id: userId,
+            },
+            transaction,
         }))) === null || _a === void 0 ? void 0 : _a.toJSON();
         // if User not found
         if (!userFound) {
-            return (0, ErrorHandler_1.ErrorHandler)({ statusCode: 404, message: "Usuario no encontrado" }, res);
+            return (0, ErrorHandler_1.ErrorHandler)({
+                statusCode: 404,
+                message: "Usuario no encontrado",
+            }, res);
         }
         // Searching invoices
         const invoicesArray = (yield invoice_model_1.InvoiceModel.findAll({
-            where: { _id: userId },
+            where: {
+                _id: userId,
+            },
+            transaction,
         })).map((inv) => inv.toJSON());
+        yield transaction.commit();
         const newData = Object.assign(Object.assign({}, userFound), { invoicesArray: invoicesArray });
         // console.log("newData: ", newData);
         /* users
@@ -98,28 +119,41 @@ const getUserById = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
         res.status(200).json(dataResponse);
     }
     catch (err) {
-        return (0, ErrorHandler_1.ErrorHandler)({ statusCode: 500, message: "Ha ocurrido un error en el servidor" }, res);
+        yield transaction.rollback();
+        return (0, ErrorHandler_1.ErrorHandler)({
+            statusCode: 500,
+            message: "Ha ocurrido un error en el servidor",
+        }, res);
     }
 });
 exports.getUserById = getUserById;
 // CREATE user
 const createUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    const transaction = yield db_1.default.transaction();
     try {
         // TODO: Verify if the req.body don't empty.
-        // TODO: Verify if the user hasn't been created yet. The DNI should be used for that validation.
-        const userToCreate = req.body;
-        if (!userToCreate) {
+        // TODO: Verify if the user hasn't been created yet. The DNI should be used for
+        // that validation.
+        if (!req.body) {
+            yield transaction.rollback();
             return (0, ErrorHandler_1.ErrorHandler)({ statusCode: 400, message: "El cuerpo de la solicitud está vacío" }, res);
         }
         const { trainerDni, trainerId, lastName, userDni, weight, plan, name, age, } = req.body;
-        const allUsers = (yield user_model_1.UserModel.findAll()).map((user) => user.toJSON());
-        const totalUsers = allUsers.length;
-        const sameUsers = allUsers.filter((user) => user.userDni === userDni);
-        if (sameUsers && sameUsers.length > 0) {
+        const sameUsers = yield user_model_1.UserModel.findOne({
+            where: { userDni },
+            transaction,
+        });
+        /* const totalUsers = allUsers.length;
+        const sameUsers: UserBody[] = allUsers.filter(
+          (user: UserBody) => user.userDni === userDni,
+        ); */
+        if (sameUsers) {
+            yield transaction.rollback();
             return (0, ErrorHandler_1.ErrorHandler)({ statusCode: 409, message: "Ya existe un usuario con ese DNI" }, res);
         }
         const user = {
-            _id: totalUsers + 1,
+            // _id: totalUsers + 1,
             userDni,
             name,
             lastName,
@@ -137,55 +171,74 @@ const createUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
             // createdAt: new Date(),
             // updatedAt: new Date(),
         };
-        const data = yield user_model_1.UserModel.create(user);
-        console.log("---> data:", data);
-        if (!data) {
+        const userToCreated = yield user_model_1.UserModel.create(user, { transaction });
+        console.log("---> userToCreated:", userToCreated);
+        if (!userToCreated) {
+            yield transaction.rollback();
             return (0, ErrorHandler_1.ErrorHandler)({
                 statusCode: 400,
                 message: "Hubo un problema para crear el registro.",
             }, res);
         }
         // On these place i will add the code to create the first invoice for the user.
-        const totalInvoices = (yield invoice_model_1.InvoiceModel.findAll()).map((invoice) => invoice.toJSON());
+        const totalInvoices = yield invoice_model_1.InvoiceModel.count({ transaction });
         const invoiceDays = (0, invoiceDaysCalc_1.invoiceDaysCalculator)(plan);
         if (typeof invoiceDays === "string") {
+            yield transaction.rollback();
             return (0, ErrorHandler_1.ErrorHandler)({
                 statusCode: 400,
                 message: "El plan del usuario es inválido.",
             }, res);
         }
+        const planSelected = (_a = (yield amount_model_1.AmountModel.findOne({
+            where: { name: plan },
+            transaction,
+        }))) === null || _a === void 0 ? void 0 : _a.toJSON();
+        console.log("planSelected --> ", planSelected);
+        if (planSelected === undefined) {
+            yield transaction.rollback();
+            return (0, ErrorHandler_1.ErrorHandler)({
+                statusCode: 400,
+                message: "No existe el plan seleccionado, por favor indicar otro.",
+            }, res);
+        }
+        console.log("planSelected --> ", planSelected);
         const { firstDay, lastDay } = invoiceDays;
         const firstInvoice = {
-            _id: totalInvoices.length + 1, // Genera un ID único para la factura.
+            // _id: totalInvoices + 1, // Genera un ID único para la factura.
             userLastName: lastName,
             trainerDni,
-            invoiceId: crypto.randomUUID(),
+            invoiceId: (0, fillWithZeros_1.fillWithZeros)(totalInvoices + 1, 5),
             firstDate: firstDay,
             userName: name,
             lastDate: lastDay,
             userDni,
-            amount: 100, // TODO --> Ajusta el monto según el plan.
-            plan,
+            amount: planSelected.cost, // TODO --> Ajusta el monto según el plan.
+            plan: planSelected.name,
         };
-        const createdInvoice = yield invoice_model_1.InvoiceModel.create(firstInvoice);
+        const createdInvoice = yield invoice_model_1.InvoiceModel.create(firstInvoice, {
+            transaction,
+        });
         if (!createdInvoice) {
+            yield transaction.rollback();
             return (0, ErrorHandler_1.ErrorHandler)({
                 statusCode: 400,
                 message: "Hubo un problema para crear la primera factura.",
             }, res);
         }
         // Asegúrate de que invoicesArray sea un array
-        if (!Array.isArray(data.dataValues.invoicesArray)) {
-            data.dataValues.invoicesArray = [];
+        if (!Array.isArray(userToCreated.dataValues.invoicesArray)) {
+            userToCreated.dataValues.invoicesArray = [];
         }
         // Agrega el ID de la factura y filtra valores vacíos
-        data.dataValues.invoicesArray = [
-            ...data.dataValues.invoicesArray,
-            createdInvoice.dataValues.invoiceId,
-        ].filter((inv) => inv !== "");
-        yield data.update({ invoicesArray: data.dataValues.invoicesArray }, { where: { userDni } });
-        yield data.save();
-        const dataUpdated = Object.assign(Object.assign({}, data.toJSON()), { invoicesArray: createdInvoice.toJSON() });
+        userToCreated.dataValues.invoicesArray = [
+            ...userToCreated.dataValues.invoicesArray.filter((inv) => typeof inv === "object"),
+            createdInvoice.toJSON(),
+        ];
+        // userToCreated.dataValues.invoicesArray.push(invoiceData);
+        yield userToCreated.update({ invoicesArray: userToCreated.dataValues.invoicesArray }, { where: { userDni }, transaction });
+        yield transaction.commit();
+        const dataUpdated = Object.assign(Object.assign({}, userToCreated.toJSON()), { invoicesArray: [...userToCreated.toJSON().invoicesArray] });
         const dataResponse = {
             status: "success",
             message: "El usuario ha sido creado satisfactoriamente!",
@@ -196,81 +249,50 @@ const createUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         // const user = res.json({ res: "Creating user" });
     }
     catch (err) {
-        (0, ErrorHandler_1.ErrorHandler)({ statusCode: 500, message: "Ha ocurrido un error en el servidor" }, res);
+        yield transaction.rollback();
+        (0, ErrorHandler_1.ErrorHandler)({
+            statusCode: 500,
+            message: "Ha ocurrido un error en el servidor",
+        }, res);
         console.log("Error:", err);
     }
 });
 exports.createUser = createUser;
-// DELETE user by Id
-const deleteUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        // Receive the Id of the user to delete
-        const { _id } = req.params; // ID of user
-        // if id don't exist
-        if (!_id || !parseInt(_id)) {
-            return (0, ErrorHandler_1.ErrorHandler)({ statusCode: 404, message: "No fue suministrada un id del usuario" }, res);
-        }
-        // If id exists
-        const userId = parseInt(_id);
-        const userToDelete = yield user_model_1.UserModel.findOne({
-            where: { _id: userId },
-        });
-        if (!userToDelete) {
-            return (0, ErrorHandler_1.ErrorHandler)({ statusCode: 404, message: "Usuario no encontrado" }, res);
-        }
-        yield userToDelete.destroy();
-        const dataResponse = {
-            status: "success",
-            message: "El usuario ha sido eliminado satisfactoriamente",
-            data: null,
-        };
-        res.status(200).json(dataResponse);
-    }
-    catch (err) {
-        return (0, ErrorHandler_1.ErrorHandler)({ statusCode: 500, message: "Ha ocurrido un error en el servidor" }, res);
-    }
-});
-exports.deleteUser = deleteUser;
 // UPDATE user by Id
 const updateUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const transaction = yield db_1.default.transaction();
     try {
         // TODO: Read ID from request and body.
         const { _id } = req.params;
         if (!_id || !req.body) {
-            return (0, ErrorHandler_1.ErrorHandler)({ statusCode: 404, message: "Problemas con la solicitud." }, res);
+            yield transaction.rollback();
+            return (0, ErrorHandler_1.ErrorHandler)({
+                statusCode: 404,
+                message: "Problemas con la solicitud.",
+            }, res);
         }
         const userId = parseInt(_id);
         // TODO: Search user by ID
-        const userFound = yield user_model_1.UserModel.findOne({ where: { _id: userId } });
-        console.log("userFound: ", userFound);
+        const userFound = yield user_model_1.UserModel.findOne({
+            where: {
+                _id: userId,
+            },
+            transaction,
+        });
+        console.log("userFound --> ", userFound);
         // TODO: Confirm that the user exist, if do not exist, then send message.
         if (!userFound) {
-            return (0, ErrorHandler_1.ErrorHandler)({ statusCode: 404, message: "Usuario no encontrado" }, res);
+            return (0, ErrorHandler_1.ErrorHandler)({
+                statusCode: 404,
+                message: "Usuario no encontrado",
+            }, res);
         }
-        // TODO: If user existing then, update the user data.
-        const { registrationDate, trainerName, lastPayment, daysOfDebt, trainerDni, lastUpdate, invoicesArray, trainerId, lastName, userDni, weight, name, plan, age, } = req.body;
-        console.log("req.body: ", req.body);
-        // user.registrationDate  user.lastPayment  user.daysOfDebt  user.last_update
-        const userUpdated /* : UserBody */ = {
-            _id: _id,
-            registrationDate,
-            trainerName,
-            lastPayment,
-            daysOfDebt,
-            trainerDni,
-            lastUpdate,
-            invoicesArray,
-            trainerId,
-            lastName,
-            userDni,
-            weight,
-            name,
-            plan,
-            age,
-        };
+        // TODO: If user existing then, update the user userToCreated.
+        yield userFound.update(req.body, { transaction });
+        // await userFound.save(); // Asegurar que la actualización ocurra dentro de la transacción
+        yield transaction.commit(); // Confirmar los cambios en la base de datos
+        //await userFound.save();
         // TODO: if data has been updated, then the API will send a success message.
-        userFound.set(userUpdated);
-        yield userFound.save();
         const dataResponse = {
             status: "success",
             message: "el usuario ha sido actualizado satisfactoriamente!",
@@ -279,11 +301,61 @@ const updateUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         res.status(200).json(dataResponse);
     }
     catch (err) {
-        return (0, ErrorHandler_1.ErrorHandler)({ statusCode: 500, message: "Ha ocurrido un error en el servidor" }, res);
+        yield transaction.rollback();
+        return (0, ErrorHandler_1.ErrorHandler)({
+            statusCode: 500,
+            message: "Ha ocurrido un error en el servidor",
+        }, res);
     }
 });
 exports.updateUser = updateUser;
-// Get a quantity of users by a number (Pagination)
+// DELETE user by Id
+const deleteUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const transaction = yield db_1.default.transaction();
+    try {
+        // Receive the Id of the user to delete
+        const { _id } = req.params; // ID of user
+        // if id don't exist
+        if (!_id) {
+            yield transaction.rollback();
+            return (0, ErrorHandler_1.ErrorHandler)({
+                statusCode: 404,
+                message: "No fue suministrada un id del usuario",
+            }, res);
+        }
+        // If id exists
+        const userId = parseInt(_id);
+        const userToDelete = yield user_model_1.UserModel.findOne({
+            where: {
+                _id: userId,
+            },
+            transaction,
+        });
+        if (!userToDelete) {
+            return (0, ErrorHandler_1.ErrorHandler)({
+                statusCode: 404,
+                message: "Usuario no encontrado",
+            }, res);
+        }
+        yield userToDelete.destroy({ transaction });
+        yield transaction.commit();
+        const dataResponse = {
+            status: "success",
+            message: "El usuario ha sido eliminado satisfactoriamente",
+            data: null,
+        };
+        res.status(200).json(dataResponse);
+    }
+    catch (err) {
+        yield transaction.rollback();
+        return (0, ErrorHandler_1.ErrorHandler)({
+            statusCode: 500,
+            message: "Ha ocurrido un error en el servidor",
+        }, res);
+    }
+});
+exports.deleteUser = deleteUser;
+// Get a quantity of users by a Number (Pagination)
 const pagination = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         res.json({ res: "Pagination", qty: 20 });

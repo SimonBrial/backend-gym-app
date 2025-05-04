@@ -19,4 +19,14 @@ const passwordSchema = z
       "El password debe contener al menos un caracter de estos: #?!@$%^&*-, numeros del 0 -9, al menos una mayuscula y una minuscula",
   });
 
-export { passwordValidation, emailSchema, passwordSchema };
+const dniFormat = /^[VE][0-9]{8}$/;
+const RIFFormat = /^RIF-[0-9]{8}[0-9]$/;
+
+const dniSchema = z
+  .string({ message: "No puede estar vacio" })
+  .max(15, { message: "El DNI no puede tener mas de 15 caracteres" })
+  .refine((value) => dniFormat.test(value) || RIFFormat.test(value), {
+    message: "Formato no válido. Debe ser una cédula o RIF con formato valido.",
+  });
+
+export { passwordValidation, emailSchema, passwordSchema, dniSchema };
