@@ -9,19 +9,19 @@ import {
 
 const amountRouter = Router();
 
-// Get all amounts
+// TODO: READ all amounts
 amountRouter.get("/amounts", getAmounts);
 
-// Get amount by ID
+// TODO: READ amount by ID
 amountRouter.get("/amount/:name", getAmountName);
 
-// UPDATE amount by Id
+// TODO: UPDATE amount by Id
 amountRouter.put("/amount/u/:name", updateAmount);
 
-// CREATE amount
+// TODO: CREATE amount
 amountRouter.post("/amount/create", createAmount);
 
-// DELETE amount
+// TODO: DELETE amount
 amountRouter.delete("/amount/d/:name", deleteAmount);
 
 export default amountRouter;

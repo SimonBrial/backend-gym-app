@@ -20,6 +20,7 @@ const invoice_model_1 = require("../models/invoice.model");
 const db_1 = __importDefault(require("../db"));
 const fillWithZeros_1 = require("../helpers/fillWithZeros");
 const amount_model_1 = require("../models/amount.model");
+const getDollarValue_1 = require("../helpers/getDollarValue");
 // READ all users
 const getUsers = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
@@ -139,7 +140,7 @@ const createUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
             yield transaction.rollback();
             return (0, ErrorHandler_1.ErrorHandler)({ statusCode: 400, message: "El cuerpo de la solicitud está vacío" }, res);
         }
-        const { trainerDni, trainerId, lastName, userDni, weight, plan, name, age, } = req.body;
+        const { paymentMethod, phoneNumber, trainerName, trainerDni, direction, trainerId, lastName, userDni, comments, weight, email, plan, name, age, } = req.body;
         const sameUsers = yield user_model_1.UserModel.findOne({
             where: { userDni },
             transaction,
@@ -152,26 +153,27 @@ const createUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
             yield transaction.rollback();
             return (0, ErrorHandler_1.ErrorHandler)({ statusCode: 409, message: "Ya existe un usuario con ese DNI" }, res);
         }
-        const user = {
-            // _id: totalUsers + 1,
-            userDni,
-            name,
-            lastName,
-            age,
-            weight,
-            trainerId,
+        const newUser = {
+            // _id: totalUsers + 1, <-- It´s automacally
+            phoneNumber,
             trainerDni,
+            trainerId,
+            direction,
+            lastName,
+            userDni,
+            weight,
+            email,
             plan,
+            name,
+            age,
+            trainerName: trainerName ? trainerName : "No asignado",
             registrationDate: new Date(),
             lastPayment: new Date(),
             lastUpdate: new Date(),
-            daysOfDebt: 0,
-            trainerName: "",
             invoicesArray: [""],
-            // createdAt: new Date(),
-            // updatedAt: new Date(),
+            daysOfDebt: 0,
         };
-        const userToCreated = yield user_model_1.UserModel.create(user, { transaction });
+        const userToCreated = yield user_model_1.UserModel.create(newUser, { transaction });
         console.log("---> userToCreated:", userToCreated);
         if (!userToCreated) {
             yield transaction.rollback();
@@ -204,17 +206,27 @@ const createUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         }
         console.log("planSelected --> ", planSelected);
         const { firstDay, lastDay } = invoiceDays;
+        const { monitors } = yield (0, getDollarValue_1.getDollarValue)();
         const firstInvoice = {
             // _id: totalInvoices + 1, // Genera un ID único para la factura.
             userLastName: lastName,
             trainerDni,
-            invoiceId: (0, fillWithZeros_1.fillWithZeros)(totalInvoices + 1, 5),
+            invoiceId: (0, fillWithZeros_1.fillWithZeros)(totalInvoices + 1, 11),
             firstDate: firstDay,
             userName: name,
             lastDate: lastDay,
             userDni,
             amount: planSelected.cost, // TODO --> Ajusta el monto según el plan.
-            plan: planSelected.name,
+            plan,
+            direction,
+            phoneNumber,
+            email,
+            averageValue: (monitors.enparalelovzla.price + monitors.bcv.price) / 2,
+            minExchangeDollarValue: monitors.bcv.price,
+            maxExchangeDollarValue: monitors.enparalelovzla.price,
+            paymentMethod,
+            comments,
+            trainerName: trainerName ? trainerName : "No asignado",
         };
         const createdInvoice = yield invoice_model_1.InvoiceModel.create(firstInvoice, {
             transaction,

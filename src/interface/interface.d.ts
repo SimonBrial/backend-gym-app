@@ -1,5 +1,5 @@
-import { Request } from "express";
-import { trainerPlan, statusStr } from "../types/types";
+import e, { Request } from "express";
+import { trainerPlan, statusStr, paymentMethod } from "../types/types";
 
 interface IErrorHandler {
   statusCode: number;
@@ -21,9 +21,17 @@ interface UserBody {
   trainerDni?: string;
   trainerName?: string;
   lastUpdate: Date;
+  phoneNumber: string;
+  email: string;
+  direction: string;
   invoicesArray?: any[];
   /*  createdAt: Date;
   updatedAt: Date; */
+}
+
+interface userCreated extends UserBody {
+  paymentMethod: paymentMethod;
+  comments?: string;
 }
 
 interface InvoiceBody {
@@ -32,14 +40,22 @@ interface InvoiceBody {
   userDni: string;
   userName: string;
   userLastName: string;
-  // trainer_id?: number;
   trainerDni?: string;
   trainerName?: string;
-  // trainerLastName?: string;
   firstDate: Date;
   lastDate: Date;
   amount: number;
-  plan: trainerPlan;
+  plan: trainerPlan | string;
+  phoneNumber: string;
+  email: string;
+  direction: string;
+  minExchangeDollarValue: number;
+  averageValue: number;
+  maxExchangeDollarValue: number;
+  paymentMethod: paymentMethod;
+  comments?: string;
+  // trainer_id?: number;
+  // trainerLastName?: string;
 }
 
 interface AmountBody {
@@ -128,19 +144,48 @@ interface InvoiceDaysCalculator {
   firstDay: Date;
   lastDay: Date;
 }
+interface Datetime {
+  date: string;
+  time: string;
+}
+interface ExchangeMonitor {
+  change: number;
+  color: string;
+  image: string;
+  last_update: Date;
+  percent: number;
+  price: number;
+  price_old: number;
+  symbol: string;
+  title: string;
+}
+interface Monitors {
+  bcv: ExchangeMonitor;
+  enparalelovzla: ExchangeMonitor;
+}
+
+interface DollarExchangeResponse {
+  datetime: Datetime;
+  monitors: Monitors;
+}
 
 export type {
+  DollarExchangeResponse,
   InvoiceDaysCalculator,
   TrainerBodyCreating,
   UserBodyCreating,
+  ExchangeMonitor,
   CustomResponse,
   IErrorHandler,
   RequestParams,
   CustomRequest,
   RequestQuery,
+  userCreated,
   InvoiceBody,
   TrainerBody,
   AmountBody,
   AdminBody,
   UserBody,
+  Monitors,
+  Datetime,
 };

@@ -10,19 +10,19 @@ import {
 
 const userRouter = Router();
 
-// READ all users
+// TODO: READ all users
 userRouter.get("/users", getUsers);
 
-// READ user by ID
+// TODO: READ user by ID
 userRouter.get("/user/:_id", getUserById);
 
-// CREATE user
+// TODO: CREATE user
 userRouter.post("/user/create", createUser);
 
-// UPDATE user by Id
+// TODO: UPDATE user by Id
 userRouter.put("/user/u/:_id", updateUser);
 
-// DELETE user by Id
+// TODO: DELETE user by Id
 userRouter.delete("/user/d/:_id", deleteUser);
 
 // Get a quantity of users by a Number (Pagination)

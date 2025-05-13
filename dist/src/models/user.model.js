@@ -75,6 +75,21 @@ exports.UserModel = db_1.default.define("user", {
         allowNull: false,
         defaultValue: dt.toISOString(),
     },
+    direction: {
+        type: sequelize_1.DataTypes.STRING(50),
+        allowNull: true,
+        defaultValue: "Direccion no asignada",
+    },
+    phoneNumber: {
+        type: sequelize_1.DataTypes.STRING(15),
+        allowNull: true,
+        defaultValue: "Telefono no asignado",
+    },
+    email: {
+        type: sequelize_1.DataTypes.STRING(20),
+        allowNull: true,
+        defaultValue: "Correo no asignado",
+    },
     invoicesArray: {
         type: sequelize_1.DataTypes.ARRAY(sequelize_1.DataTypes.STRING()),
         allowNull: true,

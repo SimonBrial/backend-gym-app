@@ -11,7 +11,7 @@ const finalDayOfWeek = (dateInput: Date): Date => {
 };
 
 export const invoiceDaysCalculator = (
-  plan: trainerPlan,
+  plan: trainerPlan | string,
 ): string | InvoiceDaysCalculator => {
   // TODO: Get totally of days of the current month.
   // TODO: Get the current month and the next month.

@@ -73,6 +73,21 @@ export const UserModel = sequelize.define(
       allowNull: false,
       defaultValue: dt.toISOString(),
     },
+    direction: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+      defaultValue: "Direccion no asignada",
+    },
+    phoneNumber: {
+      type: DataTypes.STRING(15),
+      allowNull: true,
+      defaultValue: "Telefono no asignado",
+    },
+    email: {
+      type: DataTypes.STRING(20),
+      allowNull: true,
+      defaultValue: "Correo no asignado",
+    },
     invoicesArray: {
       type: DataTypes.ARRAY(DataTypes.STRING()),
       allowNull: true,

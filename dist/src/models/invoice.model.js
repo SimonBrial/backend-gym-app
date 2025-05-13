@@ -14,7 +14,7 @@ exports.InvoiceModel = db_1.default.define("invoice", {
         primaryKey: true,
     },
     invoiceId: {
-        type: sequelize_1.DataTypes.STRING(6),
+        type: sequelize_1.DataTypes.STRING(15),
         allowNull: false,
         unique: true, // Garantiza que sea único
         validate: {
@@ -22,7 +22,7 @@ exports.InvoiceModel = db_1.default.define("invoice", {
         },
     },
     userDni: {
-        type: sequelize_1.DataTypes.STRING(15),
+        type: sequelize_1.DataTypes.STRING(10),
         allowNull: false,
     },
     userName: {
@@ -33,10 +33,41 @@ exports.InvoiceModel = db_1.default.define("invoice", {
         type: sequelize_1.DataTypes.STRING(30),
         allowNull: false,
     },
-    /* trainer_id: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
-    }, */
+    direction: {
+        type: sequelize_1.DataTypes.STRING(50),
+        allowNull: false,
+        defaultValue: "Direccion no asignada",
+    },
+    phoneNumber: {
+        type: sequelize_1.DataTypes.STRING(15),
+        allowNull: false,
+        defaultValue: "Telefono no asignado",
+    },
+    email: {
+        type: sequelize_1.DataTypes.STRING(20),
+        allowNull: false,
+        defaultValue: "Correo no asignado",
+    },
+    minExchangeDollarValue: {
+        type: sequelize_1.DataTypes.FLOAT,
+        allowNull: false,
+        defaultValue: 0,
+    },
+    averageValue: {
+        type: sequelize_1.DataTypes.FLOAT,
+        allowNull: false,
+        defaultValue: 0,
+    },
+    maxExchangeDollarValue: {
+        type: sequelize_1.DataTypes.FLOAT,
+        allowNull: false,
+        defaultValue: 0,
+    },
+    paymentMethod: {
+        type: sequelize_1.DataTypes.ENUM("contado", "bolivares"),
+        allowNull: false,
+        defaultValue: "contado",
+    },
     trainerDni: {
         type: sequelize_1.DataTypes.STRING(50), // The length of the DNI should be define
         allowNull: true,
@@ -69,6 +100,11 @@ exports.InvoiceModel = db_1.default.define("invoice", {
     plan: {
         type: sequelize_1.DataTypes.ENUM("monthly", "weekly", "daily"),
         allowNull: false,
+    },
+    comments: {
+        type: sequelize_1.DataTypes.STRING(100),
+        allowNull: true,
+        defaultValue: "",
     },
 }, { timestamps: true });
 //# sourceMappingURL=invoice.model.js.map

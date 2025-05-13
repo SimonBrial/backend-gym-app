@@ -7,12 +7,14 @@ import {
   CustomResponse,
   InvoiceBody,
   UserBody,
+  userCreated,
 } from "../interface/interface";
 import { invoiceDaysCalculator } from "../helpers/invoiceDaysCalc";
 import { InvoiceModel } from "../models/invoice.model";
 import sequelize from "../db";
 import { fillWithZeros } from "../helpers/fillWithZeros";
 import { AmountModel } from "../models/amount.model";
+import { getDollarValue } from "../helpers/getDollarValue";
 
 // READ all users
 const getUsers = async (req: Request, res: Response): Promise<void> => {
@@ -166,7 +168,7 @@ const getUserById = async (
 
 // CREATE user
 const createUser = async (
-  req: CustomRequest<UserBody>,
+  req: CustomRequest<userCreated>,
   res: Response,
 ): Promise<void> => {
   const transaction = await sequelize.transaction();
@@ -184,15 +186,21 @@ const createUser = async (
     }
 
     const {
+      paymentMethod,
+      phoneNumber,
+      trainerName,
       trainerDni,
+      direction,
       trainerId,
       lastName,
       userDni,
+      comments,
       weight,
+      email,
       plan,
       name,
       age,
-    } = req.body;
+    } = req.body as userCreated;
 
     const sameUsers = await UserModel.findOne({
       where: { userDni },
@@ -212,27 +220,28 @@ const createUser = async (
       );
     }
 
-    const user = {
-      // _id: totalUsers + 1,
-      userDni,
-      name,
-      lastName,
-      age,
-      weight,
-      trainerId,
+    const newUser = {
+      // _id: totalUsers + 1, <-- It´s automacally
+      phoneNumber,
       trainerDni,
+      trainerId,
+      direction,
+      lastName,
+      userDni,
+      weight,
+      email,
       plan,
+      name,
+      age,
+      trainerName: trainerName ? trainerName : "No asignado",
       registrationDate: new Date(),
       lastPayment: new Date(),
       lastUpdate: new Date(),
-      daysOfDebt: 0,
-      trainerName: "",
       invoicesArray: [""],
-      // createdAt: new Date(),
-      // updatedAt: new Date(),
+      daysOfDebt: 0,
     };
 
-    const userToCreated = await UserModel.create(user, { transaction });
+    const userToCreated = await UserModel.create(newUser, { transaction });
     console.log("---> userToCreated:", userToCreated);
 
     if (!userToCreated) {
@@ -283,17 +292,28 @@ const createUser = async (
     console.log("planSelected --> ", planSelected);
 
     const { firstDay, lastDay } = invoiceDays;
+    const { monitors } = await getDollarValue();
+
     const firstInvoice = {
       // _id: totalInvoices + 1, // Genera un ID único para la factura.
       userLastName: lastName,
       trainerDni,
-      invoiceId: fillWithZeros(totalInvoices + 1, 5),
+      invoiceId: fillWithZeros(totalInvoices + 1, 11),
       firstDate: firstDay,
       userName: name,
       lastDate: lastDay,
       userDni,
       amount: planSelected.cost, // TODO --> Ajusta el monto según el plan.
-      plan: planSelected.name,
+      plan,
+      direction,
+      phoneNumber,
+      email,
+      averageValue: (monitors.enparalelovzla.price + monitors.bcv.price) / 2,
+      minExchangeDollarValue: monitors.bcv.price,
+      maxExchangeDollarValue: monitors.enparalelovzla.price,
+      paymentMethod,
+      comments,
+      trainerName: trainerName ? trainerName : "No asignado",
     };
 
     const createdInvoice = await InvoiceModel.create(firstInvoice, {

@@ -6,6 +6,7 @@ import {
   CustomRequest,
   TrainerBody,
 } from "../interface/interface";
+import sequelize from "../db";
 
 // READ all trainers
 const getTrainers = async (req: Request, res: Response): Promise<void> => {
@@ -49,6 +50,7 @@ const getTrainerById = async (
   req: CustomRequest<TrainerBody>,
   res: Response,
 ): Promise<void> => {
+  const transaction = await sequelize.transaction();
   try {
     // Read the ?id from the request parameters
     const { _id } = req.params;
@@ -58,6 +60,7 @@ const getTrainerById = async (
 
     // if _id in not found
     if (!_id || isNaN(trainerId)) {
+      await transaction.rollback();
       return ErrorHandler(
         {
           statusCode: 400,
@@ -70,10 +73,12 @@ const getTrainerById = async (
     // if there isn't problem with the params of the request.
     const trainerFound = await TrainerModel.findOne({
       where: { _id: trainerId },
+      transaction,
     });
 
     // if trainer not found
     if (!trainerFound) {
+      await transaction.rollback();
       return ErrorHandler(
         { statusCode: 404, message: "Entrenador no encontrado" },
         res,
@@ -91,6 +96,7 @@ const getTrainerById = async (
     res.status(200).json(dataResponse);
   } catch (err) {
     console.log(err);
+    await transaction.rollback();
     return ErrorHandler(
       {
         statusCode: 400,
@@ -106,6 +112,7 @@ const createTrainer = async (
   req: CustomRequest<TrainerBody>,
   res: Response,
 ): Promise<void> => {
+  const transaction = await sequelize.transaction();
   try {
     // TODO: Verify if the req.body don't empty.
     // TODO: Verify if the user hasn't been created yet. The DNI should be used for that validation.
@@ -119,15 +126,16 @@ const createTrainer = async (
 
     const { age, area, lastName, name, trainerDni, assignedClients } = req.body;
 
-    const allTrainer: TrainerBody[] = (await TrainerModel.findAll()).map(
-      (trainer) => trainer.toJSON(),
-    );
+    const allTrainer: TrainerBody[] = (
+      await TrainerModel.findAll({ transaction })
+    ).map((trainer) => trainer.toJSON());
     const totalTrainer = allTrainer.length;
     const sameTrainer: TrainerBody[] = allTrainer.filter(
       (trainer: TrainerBody) => trainer.trainerDni === trainerDni,
     );
 
     if (sameTrainer && sameTrainer.length > 0) {
+      await transaction.rollback();
       return ErrorHandler(
         { statusCode: 409, message: "Ya existe un entrenador con ese DNI" },
         res,
@@ -144,11 +152,12 @@ const createTrainer = async (
       age,
     };
 
-    const data = await TrainerModel.create(trainer);
+    const data = await TrainerModel.create(trainer, { transaction });
 
     console.log("---> data:", data);
 
     if (!data) {
+      await transaction.rollback();
       return ErrorHandler(
         {
           statusCode: 400,
@@ -183,6 +192,7 @@ const updateTrainer = async (
   req: CustomRequest<TrainerBody>,
   res: Response,
 ): Promise<void> => {
+  const transaction = await sequelize.transaction();
   try {
     // TODO: Read ID from request and body.
     const { _id } = req.params;
@@ -198,6 +208,7 @@ const updateTrainer = async (
     // TODO: Search trainer by ID
     const trainerFound = await TrainerModel.findOne({
       where: { _id: trainerId },
+      transaction,
     });
 
     // TODO: Confirm that the trainer exist, if do not exist, then send message.
@@ -221,9 +232,9 @@ const updateTrainer = async (
     };
     // TODO: if data has been updated, then the API will send a success message.
 
-    trainerFound.set(userUpdated);
+    await trainerFound.update(userUpdated);
 
-    await trainerFound.save();
+    await transaction.commit();
 
     const dataResponse: CustomResponse = {
       status: "success",
@@ -249,6 +260,7 @@ const deleteTrainer = async (
   req: CustomRequest<TrainerBody>,
   res: Response,
 ): Promise<void> => {
+  const transaction = await sequelize.transaction();
   try {
     // Receive the Id of the trainer to delete
     const { _id } = req.params; // ID of trainer
@@ -271,10 +283,12 @@ const deleteTrainer = async (
 
     const trainerToDelete = await TrainerModel.findOne({
       where: { _id: trainerId },
+      transaction,
     });
 
     // if trainer not found
     if (!trainerToDelete) {
+      await transaction.rollback();
       return ErrorHandler(
         { statusCode: 404, message: "Entrenador no encontrado" },
         res,
@@ -282,7 +296,7 @@ const deleteTrainer = async (
     }
 
     // Trainer found
-    await trainerToDelete.destroy();
+    await trainerToDelete.destroy({ transaction });
 
     const dataResponse: CustomResponse = {
       status: "success",
@@ -294,6 +308,7 @@ const deleteTrainer = async (
     res.status(200).json(dataResponse);
   } catch (err) {
     console.log(err);
+    await transaction.rollback();
     ErrorHandler(
       {
         statusCode: 400,

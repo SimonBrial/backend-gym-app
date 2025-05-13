@@ -13,16 +13,18 @@ import { UserModel } from "../models/user.model";
 import { fillWithZeros } from "../helpers/fillWithZeros";
 import sequelize from "../db";
 import { AmountModel } from "../models/amount.model";
+import { getDollarValue } from "../helpers/getDollarValue";
 
 // READ all users
 const getInvoices = async (req: Request, res: Response): Promise<void> => {
-  const transaction = await sequelize.transaction();
+  // const transaction = await sequelize.transaction();
   try {
     // Search in the DDBB
-    const invoices = await InvoiceModel.findAll({ transaction });
+    const invoices = await InvoiceModel.findAll(/* { transaction } */);
 
     // If there are not any invoices found
     if (!invoices || invoices.length === 0) {
+      // await transaction.rollback();
       return ErrorHandler(
         {
           statusCode: 404,
@@ -38,7 +40,7 @@ const getInvoices = async (req: Request, res: Response): Promise<void> => {
       data: invoices,
     };
 
-    await transaction.commit();
+    // await transaction.commit();
 
     // invoices found
     res.status(200).json(dataResponse);
@@ -65,6 +67,7 @@ const getInvoiceById = async (
 
     // if _id not exist
     if (!invoiceId || isNaN(invoiceId)) {
+      await transaction.rollback();
       return ErrorHandler(
         {
           statusCode: 400,
@@ -84,6 +87,7 @@ const getInvoiceById = async (
 
     // if invoice not found
     if (!invoiceFound) {
+      await transaction.rollback();
       return ErrorHandler(
         { statusCode: 404, message: "Factura no encontrado" },
         res,
@@ -121,27 +125,40 @@ const createInvoice = async (
     // TODO: Verify if the invoice hasn't been created yet.
 
     if (!req.body) {
+      await transaction.rollback();
       return ErrorHandler(
         { statusCode: 400, message: "El cuerpo de la solicitud está vacío" },
         res,
       );
     }
 
-    const { userLastName, trainerDni, userName, userDni, plan } = req.body;
+    const {
+      paymentMethod,
+      userLastName,
+      phoneNumber,
+      trainerName,
+      trainerDni,
+      direction,
+      userName,
+      comments,
+      userDni,
+      email,
+      plan,
+    } = req.body as InvoiceBody;
 
     // Is there an user with the userDni string?
-    const userExisting = await UserModel.findAll({
-      where: { userDni },
-      transaction,
-    });
+    const userExisting = (
+      await UserModel.findAll({
+        where: { userDni },
+        transaction,
+      })
+    ).map((user) => user.toJSON());
 
-    /* console.log(
-      "userExisting --> ",
-      userExisting.map((u) => u.toJSON()),
-    );
- */
+    console.log("userExisting --> ", userExisting);
+
     // if there isn't an user with that dni string
     if (!userExisting) {
+      await transaction.rollback();
       return ErrorHandler(
         {
           statusCode: 400,
@@ -179,11 +196,10 @@ const createInvoice = async (
 
     const totalInvoices = await InvoiceModel.count({ transaction });
 
-    // console.log("allInvoices --> ", totalInvoices);
-    // const totalInvoices = allInvoices.length + 1;
-
     const invoicesDays = invoiceDaysCalculator(plan);
+
     if (typeof invoicesDays === "string") {
+      await transaction.rollback();
       return ErrorHandler(
         {
           statusCode: 400,
@@ -193,6 +209,7 @@ const createInvoice = async (
         res,
       );
     }
+    const { monitors } = await getDollarValue();
 
     const { firstDay, lastDay } = invoicesDays as InvoiceDaysCalculator;
 
@@ -208,6 +225,7 @@ const createInvoice = async (
     // console.log("planSelected --> ", planSelected.toJSON());
 
     if (!planSelected) {
+      await transaction.rollback();
       return ErrorHandler(
         {
           statusCode: 400,
@@ -217,18 +235,27 @@ const createInvoice = async (
       );
     }
 
-    const test: AmountBody = planSelected.toJSON();
-    console.log("test --> ", test);
+    const planToAssign: AmountBody = planSelected.toJSON();
 
-    const newInvoice /* : UserBody */ = {
+    const newInvoice = {
       userLastName,
       trainerDni,
-      invoiceId: fillWithZeros(totalInvoices + 1, 5),
+      invoiceId: fillWithZeros(totalInvoices + 1, 11),
       firstDate: firstDay,
       userName,
       lastDate: lastDay,
       userDni,
       plan,
+      amount: planToAssign.cost, // TODO --> Ajusta el monto según el plan.
+      direction: direction ? direction : userExisting[0].direction,
+      phoneNumber: phoneNumber ? phoneNumber : userExisting[0].phoneNumber,
+      email: email ? email : userExisting[0].email,
+      averageValue: (monitors.enparalelovzla.price + monitors.bcv.price) / 2,
+      minExchangeDollarValue: monitors.bcv.price,
+      maxExchangeDollarValue: monitors.enparalelovzla.price,
+      paymentMethod,
+      comments,
+      trainerName: trainerName ? trainerName : "No asignado",
     };
 
     // console.log("newInvoice --> ", newInvoice);
@@ -240,6 +267,7 @@ const createInvoice = async (
     // console.log("---> data:", data);
 
     if (!data) {
+      await transaction.rollback();
       return ErrorHandler(
         {
           statusCode: 400,
@@ -273,10 +301,12 @@ const updateInvoice = async (
   req: CustomRequest<InvoiceBody>,
   res: Response,
 ): Promise<void> => {
+  const transaction = await sequelize.transaction();
   try {
     const { _id } = req.params;
 
     if (!_id || !req.body) {
+      await transaction.rollback();
       return ErrorHandler(
         { statusCode: 404, message: "Problemas con la solicitud." },
         res,
@@ -285,16 +315,18 @@ const updateInvoice = async (
 
     const invoiceFound = await InvoiceModel.findOne({
       where: { _id: parseInt(_id) },
+      transaction,
     });
 
     if (!invoiceFound) {
+      await transaction.rollback();
       return ErrorHandler(
         { statusCode: 404, message: "Usuario no encontrado" },
         res,
       );
     }
 
-    const {
+    /* const {
       // trainerLastName,
       userLastName,
       trainerName,
@@ -320,11 +352,10 @@ const updateInvoice = async (
       userDni,
       amount,
       plan,
-    };
+    }; */
 
-    invoiceFound.set(invoiceToUpdated);
-
-    await invoiceFound.save();
+    await invoiceFound.update(req.body, { transaction });
+    await transaction.commit();
 
     const dataResponse: CustomResponse = {
       status: "success",
@@ -334,6 +365,7 @@ const updateInvoice = async (
 
     res.status(200).json(dataResponse);
   } catch (error) {
+    await transaction.rollback();
     return ErrorHandler(
       {
         statusCode: 400,
@@ -348,12 +380,14 @@ const deleteInvoice = async (
   req: CustomRequest<InvoiceBody>,
   res: Response,
 ): Promise<void> => {
+  const transaction = await sequelize.transaction();
   try {
     // Receive the Id of the invoice to delete
     const { _id } = req.params;
 
     // if id don't exist
     if (!_id || !parseInt(_id)) {
+      await transaction.rollback();
       return ErrorHandler(
         { statusCode: 404, message: "No fue suministrada un id de usuario" },
         res,
@@ -365,16 +399,19 @@ const deleteInvoice = async (
 
     const invoiceToDelete = await InvoiceModel.findOne({
       where: { _id: invoiceId },
+      transaction,
     });
 
     if (!invoiceToDelete) {
+      await transaction.rollback();
       return ErrorHandler(
         { statusCode: 404, message: "Factura no encontrado" },
         res,
       );
     }
 
-    await invoiceToDelete.destroy();
+    await invoiceToDelete.destroy({ transaction });
+    await transaction.commit();
 
     const dataResponse: CustomResponse = {
       status: "success",
@@ -384,6 +421,7 @@ const deleteInvoice = async (
 
     res.status(200).json(dataResponse);
   } catch (error) {
+    await transaction.rollback();
     return ErrorHandler(
       {
         statusCode: 400,

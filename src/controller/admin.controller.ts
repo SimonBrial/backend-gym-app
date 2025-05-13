@@ -54,7 +54,7 @@ const getAdminById = async (
     const { _id } = req.params;
 
     console.log("Received ID:", _id);
-    const adminId = parseInt(_id);
+    const adminId = parseInt( _id);
 
     // if _id in not found
     if (!_id || isNaN(adminId)) {
@@ -192,7 +192,7 @@ const updateAdmin = async (
         res,
       );
     }
-    const adminId = parseInt(_id);
+    const adminId = parseInt( _id);
     const adminFound = (await AdminModel.findOne({
       where: { _id: adminId, isDeleted: false },
     }));
@@ -264,13 +264,13 @@ const hardDeleteAdmin = async (
   try {
     const { _id } = req.params;
 
-    if (!_id || !parseInt(_id)) {
+    if (!_id || !parseInt( _id)) {
       return ErrorHandler(
         { statusCode: 404, message: "No fue suministrada un id del administrador" },
         res,
       );
     }
-    const adminId = parseInt(_id);
+    const adminId = parseInt( _id);
     const adminToDelete = await AdminModel.findOne({
       where: { _id: adminId, isDeleted: false },
     });

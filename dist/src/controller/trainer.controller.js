@@ -8,10 +8,14 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getTrainers = exports.createTrainer = exports.deleteTrainer = exports.updateTrainer = exports.getTrainerById = void 0;
 const ErrorHandler_1 = require("../helpers/ErrorHandler");
 const trainer_model_1 = require("../models/trainer.model");
+const db_1 = __importDefault(require("../db"));
 // READ all trainers
 const getTrainers = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
@@ -43,6 +47,7 @@ const getTrainers = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
 exports.getTrainers = getTrainers;
 // READ trainer by ID
 const getTrainerById = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const transaction = yield db_1.default.transaction();
     try {
         // Read the ?id from the request parameters
         const { _id } = req.params;
@@ -50,6 +55,7 @@ const getTrainerById = (req, res) => __awaiter(void 0, void 0, void 0, function*
         const trainerId = parseInt(_id);
         // if _id in not found
         if (!_id || isNaN(trainerId)) {
+            yield transaction.rollback();
             return (0, ErrorHandler_1.ErrorHandler)({
                 statusCode: 400,
                 message: "Problemas con la solicitud, no ha podido ser procesada.",
@@ -58,9 +64,11 @@ const getTrainerById = (req, res) => __awaiter(void 0, void 0, void 0, function*
         // if there isn't problem with the params of the request.
         const trainerFound = yield trainer_model_1.TrainerModel.findOne({
             where: { _id: trainerId },
+            transaction,
         });
         // if trainer not found
         if (!trainerFound) {
+            yield transaction.rollback();
             return (0, ErrorHandler_1.ErrorHandler)({ statusCode: 404, message: "Entrenador no encontrado" }, res);
         }
         // Trainer found
@@ -74,6 +82,7 @@ const getTrainerById = (req, res) => __awaiter(void 0, void 0, void 0, function*
     }
     catch (err) {
         console.log(err);
+        yield transaction.rollback();
         return (0, ErrorHandler_1.ErrorHandler)({
             statusCode: 400,
             message: "la solicitud no ha podido ser gestionada adecuadamente.",
@@ -83,6 +92,7 @@ const getTrainerById = (req, res) => __awaiter(void 0, void 0, void 0, function*
 exports.getTrainerById = getTrainerById;
 // CREATE trainer
 const createTrainer = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const transaction = yield db_1.default.transaction();
     try {
         // TODO: Verify if the req.body don't empty.
         // TODO: Verify if the user hasn't been created yet. The DNI should be used for that validation.
@@ -90,10 +100,11 @@ const createTrainer = (req, res) => __awaiter(void 0, void 0, void 0, function* 
             return (0, ErrorHandler_1.ErrorHandler)({ statusCode: 400, message: "El cuerpo de la solicitud está vacío" }, res);
         }
         const { age, area, lastName, name, trainerDni, assignedClients } = req.body;
-        const allTrainer = (yield trainer_model_1.TrainerModel.findAll()).map((trainer) => trainer.toJSON());
+        const allTrainer = (yield trainer_model_1.TrainerModel.findAll({ transaction })).map((trainer) => trainer.toJSON());
         const totalTrainer = allTrainer.length;
         const sameTrainer = allTrainer.filter((trainer) => trainer.trainerDni === trainerDni);
         if (sameTrainer && sameTrainer.length > 0) {
+            yield transaction.rollback();
             return (0, ErrorHandler_1.ErrorHandler)({ statusCode: 409, message: "Ya existe un entrenador con ese DNI" }, res);
         }
         const trainer = {
@@ -105,9 +116,10 @@ const createTrainer = (req, res) => __awaiter(void 0, void 0, void 0, function* 
             name,
             age,
         };
-        const data = yield trainer_model_1.TrainerModel.create(trainer);
+        const data = yield trainer_model_1.TrainerModel.create(trainer, { transaction });
         console.log("---> data:", data);
         if (!data) {
+            yield transaction.rollback();
             return (0, ErrorHandler_1.ErrorHandler)({
                 statusCode: 400,
                 message: "Hubo un problema para crear el registro.",
@@ -132,6 +144,7 @@ const createTrainer = (req, res) => __awaiter(void 0, void 0, void 0, function* 
 exports.createTrainer = createTrainer;
 // UPDATE trainer by Id
 const updateTrainer = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const transaction = yield db_1.default.transaction();
     try {
         // TODO: Read ID from request and body.
         const { _id } = req.params;
@@ -142,6 +155,7 @@ const updateTrainer = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         // TODO: Search trainer by ID
         const trainerFound = yield trainer_model_1.TrainerModel.findOne({
             where: { _id: trainerId },
+            transaction,
         });
         // TODO: Confirm that the trainer exist, if do not exist, then send message.
         if (!trainerFound) {
@@ -159,8 +173,8 @@ const updateTrainer = (req, res) => __awaiter(void 0, void 0, void 0, function* 
             age,
         };
         // TODO: if data has been updated, then the API will send a success message.
-        trainerFound.set(userUpdated);
-        yield trainerFound.save();
+        yield trainerFound.update(userUpdated);
+        yield transaction.commit();
         const dataResponse = {
             status: "success",
             message: "El entrenador ha sido actualizado satisfactoriamente!",
@@ -179,6 +193,7 @@ const updateTrainer = (req, res) => __awaiter(void 0, void 0, void 0, function* 
 exports.updateTrainer = updateTrainer;
 // DELETE trainer by Id
 const deleteTrainer = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const transaction = yield db_1.default.transaction();
     try {
         // Receive the Id of the trainer to delete
         const { _id } = req.params; // ID of trainer
@@ -194,13 +209,15 @@ const deleteTrainer = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         const trainerId = parseInt(_id);
         const trainerToDelete = yield trainer_model_1.TrainerModel.findOne({
             where: { _id: trainerId },
+            transaction,
         });
         // if trainer not found
         if (!trainerToDelete) {
+            yield transaction.rollback();
             return (0, ErrorHandler_1.ErrorHandler)({ statusCode: 404, message: "Entrenador no encontrado" }, res);
         }
         // Trainer found
-        yield trainerToDelete.destroy();
+        yield trainerToDelete.destroy({ transaction });
         const dataResponse = {
             status: "success",
             message: "El entrenador ha sido eliminado satisfactoriamente",
@@ -211,6 +228,7 @@ const deleteTrainer = (req, res) => __awaiter(void 0, void 0, void 0, function* 
     }
     catch (err) {
         console.log(err);
+        yield transaction.rollback();
         (0, ErrorHandler_1.ErrorHandler)({
             statusCode: 400,
             message: "la solicitud no ha podido ser gestionada adecuadamente.",

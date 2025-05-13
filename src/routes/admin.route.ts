@@ -11,22 +11,22 @@ import {
 
 const adminRouter = Router();
 
-// READ all admins
+// TODO: READ all admins
 adminRouter.get("/admins", getAdmins);
 
-// READ admin by ID
+// TODO: READ admin by ID
 adminRouter.get("/admin/:_id", getAdminById);
 
-// CREATE admin
+// TODO: CREATE admin
 adminRouter.post("/admin/create", createAdmin);
 
-// UPDATE admin by Id
+// TODO: UPDATE admin by Id
 adminRouter.put("/admin/u/:_id", updateAdmin);
 
-// UPDATE PERMISSIONS admin by Id
+// TODO: UPDATE PERMISSIONS admin by Id
 // adminRouter.patch("/admin/u/p/:_id", updateAdminPermissions);
 
-// DELETE (HARD) admin by Id ("/admin/d/hard/:_id")
+// TODO: DELETE (HARD) admin by Id ("/admin/d/hard/:_id")
 adminRouter.delete("/admin/d/:_id", hardDeleteAdmin);
 
 // DELETE (SOFT) admin by Id

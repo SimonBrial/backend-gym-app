@@ -11,7 +11,7 @@ export const InvoiceModel = sequelize.define(
       primaryKey: true,
     },
     invoiceId: {
-      type: DataTypes.STRING(6),
+      type: DataTypes.STRING(15),
       allowNull: false,
       unique: true, // Garantiza que sea único
       validate: {
@@ -19,7 +19,7 @@ export const InvoiceModel = sequelize.define(
       },
     },
     userDni: {
-      type: DataTypes.STRING(15),
+      type: DataTypes.STRING(10),
       allowNull: false,
     },
     userName: {
@@ -30,10 +30,41 @@ export const InvoiceModel = sequelize.define(
       type: DataTypes.STRING(30),
       allowNull: false,
     },
-    /* trainer_id: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
-    }, */
+    direction: {
+      type: DataTypes.STRING(50),
+      allowNull: false,
+      defaultValue: "Direccion no asignada",
+    },
+    phoneNumber: {
+      type: DataTypes.STRING(15),
+      allowNull: false,
+      defaultValue: "Telefono no asignado",
+    },
+    email: {
+      type: DataTypes.STRING(20),
+      allowNull: false,
+      defaultValue: "Correo no asignado",
+    },
+    minExchangeDollarValue: {
+      type: DataTypes.FLOAT,
+      allowNull: false,
+      defaultValue: 0,
+    },
+    averageValue: {
+      type: DataTypes.FLOAT,
+      allowNull: false,
+      defaultValue: 0,
+    },
+    maxExchangeDollarValue: {
+      type: DataTypes.FLOAT,
+      allowNull: false,
+      defaultValue: 0,
+    },
+    paymentMethod: {
+      type: DataTypes.ENUM("contado", "bolivares"),
+      allowNull: false,
+      defaultValue: "contado",
+    },
     trainerDni: {
       type: DataTypes.STRING(50), // The length of the DNI should be define
       allowNull: true,
@@ -66,6 +97,11 @@ export const InvoiceModel = sequelize.define(
     plan: {
       type: DataTypes.ENUM("monthly", "weekly", "daily"),
       allowNull: false,
+    },
+    comments: {
+      type: DataTypes.STRING(100),
+      allowNull: true,
+      defaultValue: "",
     },
   },
   { timestamps: true },

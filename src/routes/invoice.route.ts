@@ -3,24 +3,25 @@ import {
   getInvoiceById,
   createInvoice,
   deleteInvoice,
-  // updateInvoice,
+  updateInvoice,
   getInvoices,
 } from "../controller/invoice.controller";
 
 const invoiceRouter = Router();
 
-// Get all invoices
+// TODO: READ all invoices
 invoiceRouter.get("/invoices", getInvoices);
-// Get invoice by ID
+
+// TODO: READ invoice by ID
 invoiceRouter.get("/invoice/:_id", getInvoiceById);
 
-// UPDATE invoice by Id
-// invoiceRouter.put("/trainer/u/:_id", updateTrainer);
+// TODO: UPDATE invoice by Id
+invoiceRouter.put("/trainer/u/:_id", updateInvoice);
 
-// DELETE invoice by Id
+// TODO: DELETE invoice by Id
 invoiceRouter.delete("/invoice/d/:_id", deleteInvoice);
 
-// CREATE invoice
+// TODO: CREATE invoice
 invoiceRouter.post("/invoice/create", createInvoice);
 
 export default invoiceRouter;

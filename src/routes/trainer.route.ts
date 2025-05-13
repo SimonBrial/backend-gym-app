@@ -9,18 +9,18 @@ import {
 
 const trainerRouter = Router();
 
-// Get all trainers
+// TODO: READ all trainers
 trainerRouter.get("/trainers", getTrainers);
-// Get trainer by ID
+// TODO: READ trainer by ID
 trainerRouter.get("/trainer/:_id", getTrainerById);
 
-// UPDATE trainer by Id
+// TODO: UPDATE trainer by Id
 trainerRouter.put("/trainer/u/:_id", updateTrainer);
 
-// DELETE trainer by Id
+// TODO: DELETE trainer by Id
 trainerRouter.delete("/trainer/d/:_id", deleteTrainer);
 
-// CREATE trainer
+// TODO: CREATE trainer
 trainerRouter.post("/trainer/create", createTrainer);
 
 export default trainerRouter;
